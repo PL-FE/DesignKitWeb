@@ -11,23 +11,27 @@ export async function convertCadFile(
   formData.append('target_version', targetVersion)
 
   try {
-    const response = await axios.post('/api/convert', formData, {
-      responseType: 'blob',
-      onUploadProgress: (progressEvent) => {
-        if (progressEvent.total) {
-          const percentCompleted = Math.round(
-            (progressEvent.loaded * 100) / progressEvent.total
-          )
-          if (onProgress) {
-            if (percentCompleted < 100) {
-              onProgress(percentCompleted, '正在上传文件...')
-            } else {
-              onProgress(100, '正在处理转换中，请稍候...')
+    const response = await axios.post(
+      'http://pyservice.pl-fe.cn/api/convert',
+      formData,
+      {
+        responseType: 'blob',
+        onUploadProgress: (progressEvent) => {
+          if (progressEvent.total) {
+            const percentCompleted = Math.round(
+              (progressEvent.loaded * 100) / progressEvent.total
+            )
+            if (onProgress) {
+              if (percentCompleted < 100) {
+                onProgress(percentCompleted, '正在上传文件...')
+              } else {
+                onProgress(100, '正在处理转换中，请稍候...')
+              }
             }
           }
-        }
-      },
-    })
+        },
+      }
+    )
 
     if (onProgress) {
       onProgress(100, '转换完成！正在响应下载...')
