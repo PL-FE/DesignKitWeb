@@ -45,7 +45,7 @@ const route = useRoute()
           返回全部工具
         </el-button>
         <span v-else class="text-gray-500 hidden md:inline-block"
-          >轻量高效在线工具栈</span
+          >轻量高效在线工具箱</span
         >
       </div>
     </el-header>
