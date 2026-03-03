@@ -1,72 +1,73 @@
 <script setup lang="ts">
-import { useRouter, useRoute } from 'vue-router'
-
-const router = useRouter()
-const route = useRoute()
+import AppHeader from '@/components/AppHeader.vue'
 </script>
 
 <template>
-  <el-container class="h-screen bg-gray-50 flex-col font-sans">
-    <el-header
-      class="bg-white shadow-sm flex items-center justify-between px-6 z-10 border-b border-gray-100"
-    >
-      <div
-        class="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
-        @click="router.push('/')"
-      >
-        <div
-          class="w-8 h-8 rounded-lg bg-blue-500 text-white flex items-center justify-center font-bold text-xl shadow-inner"
-        >
-          D
-        </div>
-        <h1 class="text-xl font-bold m-0 text-gray-800 tracking-tight">
-          DesignKit
-          <template v-if="route.path !== '/'">
-            <span class="text-gray-400 font-normal mx-2">/</span>
-            <span class="text-blue-500 font-medium">{{
-              route.name === 'cad-converter'
-                ? 'CAD Converter'
-                : route.meta.title
-                ? (route.meta.title as string).split(' -')[0]
-                : ''
-            }}</span>
-          </template>
-        </h1>
-      </div>
+  <div
+    class="min-h-screen bg-[#F8F9FB] flex flex-col font-sans relative overflow-x-hidden transition-colors selection:bg-violet-500/20 selection:text-violet-700"
+  >
+    <!-- 全局背景艺术氛围（光晕特效） -->
+    <div
+      class="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-violet-400/20 rounded-full blur-[120px] pointer-events-none z-0"
+    ></div>
+    <div
+      class="fixed bottom-[-10%] right-[-5%] w-[30%] h-[30%] bg-pink-400/20 rounded-full blur-[100px] pointer-events-none z-0"
+    ></div>
 
-      <div class="flex items-center gap-4 text-sm">
-        <el-button
-          v-if="route.path !== '/'"
-          plain
-          icon="Back"
-          @click="router.push('/')"
-          size="small"
-        >
-          返回全部工具
-        </el-button>
-        <span v-else class="text-gray-500 hidden md:inline-block"
-          >轻量高效在线工具箱</span
-        >
-      </div>
-    </el-header>
+    <!-- Header 响应式 -->
+    <AppHeader />
 
-    <el-main
-      class="flex-1 overflow-auto p-4 md:p-8 flex items-center justify-center"
+    <!-- Main View -->
+    <main
+      class="flex-1 w-full max-w-7xl mx-auto flex flex-col relative z-10 w-full pb-8"
     >
       <router-view v-slot="{ Component }">
-        <transition name="el-fade-in-linear" mode="out-in">
+        <transition name="page-fade" mode="out-in">
           <component :is="Component" />
         </transition>
       </router-view>
-    </el-main>
-  </el-container>
+    </main>
+  </div>
 </template>
 
 <style>
+/* 全局基础重置与现代化设置 */
 body {
   margin: 0;
-  font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB',
-    'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
-  color: #303133;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    Roboto, 'Helvetica Neue', Arial, sans-serif;
+  color: #1e293b;
+  -webkit-font-smoothing: antialiased;
+  background-color: #f8f9fb;
+}
+
+/* 页面切换过渡效果 */
+.page-fade-enter-active,
+.page-fade-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.page-fade-enter-from {
+  opacity: 0;
+  transform: translateY(10px);
+}
+.page-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+/* 隐藏部分浏览器的滚动条样式并保持优美 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 </style>

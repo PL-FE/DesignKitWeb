@@ -1,5 +1,4 @@
-import { ElMessage } from 'element-plus'
-import axios from 'axios'
+import request from './request'
 
 export async function convertCadFile(
   file: File,
@@ -11,27 +10,23 @@ export async function convertCadFile(
   formData.append('target_version', targetVersion)
 
   try {
-    const response = await axios.post(
-      'http://pyservice.pl-fe.cn/api/convert',
-      formData,
-      {
-        responseType: 'blob',
-        onUploadProgress: (progressEvent) => {
-          if (progressEvent.total) {
-            const percentCompleted = Math.round(
-              (progressEvent.loaded * 100) / progressEvent.total
-            )
-            if (onProgress) {
-              if (percentCompleted < 100) {
-                onProgress(percentCompleted, '正在上传文件...')
-              } else {
-                onProgress(100, '正在处理转换中，请稍候...')
-              }
+    const response = await request.post('/convert', formData, {
+      responseType: 'blob',
+      onUploadProgress: (progressEvent) => {
+        if (progressEvent.total) {
+          const percentCompleted = Math.round(
+            (progressEvent.loaded * 100) / progressEvent.total
+          )
+          if (onProgress) {
+            if (percentCompleted < 100) {
+              onProgress(percentCompleted, '正在上传文件...')
+            } else {
+              onProgress(100, '正在处理转换中，请稍候...')
             }
           }
-        },
-      }
-    )
+        }
+      },
+    })
 
     if (onProgress) {
       onProgress(100, '转换完成！正在响应下载...')
@@ -58,18 +53,7 @@ export async function convertCadFile(
     a.click()
     a.remove()
     window.URL.revokeObjectURL(url)
-  } catch (error: any) {
-    let errorMsg = '转换失败，网络或服务器错误'
-    if (error.response && error.response.data instanceof Blob) {
-      try {
-        const errorText = await error.response.data.text()
-        const errorData = JSON.parse(errorText)
-        errorMsg = errorData.detail || errorMsg
-      } catch (e) {
-        // failed to parse
-      }
-    }
-    ElMessage.error(errorMsg)
+  } catch (error) {
     throw error
   }
 }

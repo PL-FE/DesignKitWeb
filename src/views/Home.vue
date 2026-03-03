@@ -1,3 +1,75 @@
+<template>
+  <div
+    class="max-w-7xl mx-auto py-8 md:py-16 px-4 sm:px-6 lg:px-8 w-full box-border overflow-hidden"
+  >
+    <!-- Hero Header -->
+    <div class="text-center mb-12 sm:mb-16 animate-fade-in-up">
+      <el-tag
+        effect="light"
+        round
+        class="mb-6 !border-slate-200 !text-slate-600 !bg-slate-100 font-semibold tracking-widest px-4"
+      >
+        All-in-one Toolkit
+      </el-tag>
+      <h2
+        class="text-3xl sm:text-4xl md:text-5xl font-black text-slate-800 tracking-tight mb-4 leading-tight"
+      >
+        探索
+        <span
+          class="text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-blue-600"
+          >DesignKit</span
+        >
+        的极简体验
+      </h2>
+      <p
+        class="text-slate-500 max-w-2xl mx-auto text-base sm:text-lg font-medium leading-relaxed px-4"
+      >
+        面向设计与工程领域的现代化超轻量在线工具引擎。
+      </p>
+    </div>
+
+    <!-- Tools Grid -->
+    <div
+      class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 w-full z-10 relative"
+    >
+      <div
+        v-for="(tool, index) in tools"
+        :key="tool.id"
+        class="group relative bg-white rounded-xl p-5 border border-slate-200 shadow-sm hover:shadow-md hover:border-violet-300 transition-all duration-300 cursor-pointer overflow-hidden flex flex-col sm:flex-row items-start sm:items-center gap-4"
+        :style="{ animationDelay: `${index * 50}ms` }"
+        style="animation: fadeInUp 0.5s ease backwards"
+        @click="router.push(tool.route)"
+      >
+        <div
+          class="w-12 h-12 rounded-lg text-white flex items-center justify-center text-2xl shadow-sm bg-gradient-to-br flex-shrink-0"
+          :class="tool.color"
+        >
+          <Icon :icon="tool.icon" />
+        </div>
+
+        <div class="flex-1 min-w-0 flex flex-col justify-center">
+          <h3
+            class="text-base sm:text-lg font-bold text-slate-800 mb-1 tracking-tight truncate group-hover:text-violet-600 transition-colors"
+          >
+            {{ tool.name }}
+          </h3>
+          <p
+            class="text-slate-500 text-xs sm:text-sm leading-snug font-medium line-clamp-2"
+          >
+            {{ tool.description }}
+          </p>
+        </div>
+
+        <div
+          class="hidden sm:flex w-8 h-8 rounded-full bg-slate-50 items-center justify-center text-slate-400 group-hover:bg-violet-50 group-hover:text-violet-600 transition-colors flex-shrink-0"
+        >
+          <Icon icon="solar:alt-arrow-right-linear" class="text-lg" />
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
@@ -13,52 +85,30 @@ const tools = [
     route: '/cad-converter',
     color: 'from-blue-500 to-indigo-500',
   },
+  {
+    id: 'image-compressor',
+    name: '图片压缩',
+    description:
+      '指定压缩到目标大小，支持格式转换（JPEG / PNG / WebP）及 EXIF 清除',
+    icon: 'solar:gallery-minimalistic-bold-duotone',
+    route: '/image-compressor',
+    color: 'from-violet-500 to-pink-500',
+  },
 ]
 </script>
 
-<template>
-  <div class="w-full max-w-6xl mx-auto py-12 px-4">
-    <div class="text-center mb-16">
-      <h2 class="text-4xl font-extrabold text-gray-900 tracking-tight">
-        发现效率工具
-      </h2>
-      <p class="text-gray-500 mt-4 text-lg">
-        基于 Web 构建的设计工程工具箱，立开立用
-      </p>
-    </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-      <div
-        v-for="tool in tools"
-        :key="tool.id"
-        class="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer group hover:-translate-y-2 relative overflow-hidden"
-        @click="router.push(tool.route)"
-      >
-        <div
-          class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-          :class="tool.color"
-        ></div>
-        <div class="flex flex-col items-start gap-6">
-          <div
-            :class="[
-              'w-16 h-16 rounded-2xl text-white flex items-center justify-center text-3xl shadow-lg bg-gradient-to-br transition-transform duration-300 group-hover:scale-110 mb-2',
-              tool.color,
-            ]"
-          >
-            <Icon :icon="tool.icon" />
-          </div>
-          <div class="flex-1 w-full text-left">
-            <h3
-              class="text-xl font-bold text-gray-800 mb-2 group-hover:text-blue-600 transition-colors"
-            >
-              {{ tool.name }}
-            </h3>
-            <p class="text-gray-500 text-sm leading-relaxed">
-              {{ tool.description }}
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</template>
+<style scoped>
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+</style>
