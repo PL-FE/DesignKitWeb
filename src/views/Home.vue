@@ -28,6 +28,29 @@
       </p>
     </div>
 
+    <!-- 隐私保障说明 -->
+    <div
+      class="mb-8 sm:mb-10 privacy-banner rounded-2xl px-6 py-4 animate-fade-in-up flex items-center gap-4"
+      style="animation-delay: 100ms"
+    >
+      <div
+        class="flex items-center justify-center w-9 h-9 rounded-full bg-emerald-100 flex-shrink-0"
+      >
+        <Icon
+          icon="solar:shield-check-bold-duotone"
+          class="text-xl text-emerald-600"
+        />
+      </div>
+      <div>
+        <p class="text-sm font-bold text-slate-800">
+          零隐私风险，服务器不存储任何文件
+        </p>
+        <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">
+          所有文件仅在处理期间短暂使用，完成后立即释放或删除，不留存任何副本。
+        </p>
+      </div>
+    </div>
+
     <!-- Tools Grid -->
     <div
       class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 w-full z-10 relative"
@@ -110,5 +133,10 @@ const tools = [
 }
 .animate-fade-in-up {
   animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.privacy-banner {
+  background: linear-gradient(135deg, #f0fdf4 0%, #eff6ff 100%);
+  border: 1px solid #bbf7d0;
 }
 </style>

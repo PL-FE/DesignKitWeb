@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import AppHeader from '@/components/AppHeader.vue'
+import AppFooter from '@/components/AppFooter.vue'
 </script>
 
 <template>
@@ -27,6 +28,9 @@ import AppHeader from '@/components/AppHeader.vue'
         </transition>
       </router-view>
     </main>
+
+    <!-- Footer -->
+    <AppFooter />
   </div>
 </template>
 
