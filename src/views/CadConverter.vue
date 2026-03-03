@@ -35,7 +35,7 @@ const handleChange: UploadProps['onChange'] = (uploadFile) => {
   }
 }
 
-const handleRemove: UploadProps['onRemove'] = () => {
+const handleRemove = () => {
   selectedFile.value = null
 }
 
