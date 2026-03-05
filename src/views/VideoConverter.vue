@@ -62,21 +62,17 @@ const handleAction = async () => {
     title="视频格式转换"
     description="转格式、修兼容性，或者把音轨单独提取出来"
     icon="solar:video-frame-replace-bold-duotone"
-    gradient="from-cyan-500 to-blue-500"
+    color="cyan"
   >
     <!-- 左侧：上传区 -->
     <template #upload>
       <ToolUploader
         v-model="selectedFile"
         empty-icon="solar:video-library-bold-duotone"
-        empty-icon-class="text-cyan-400"
         empty-text="拖拽视频/音频文件"
-        accent-class="text-cyan-500"
         hint="支持 MP4 · MOV · MKV · AVI · FLV · WebM · MP3 · AAC · WAV 等 · 最大 2GB"
         accept="video/*,audio/*,.mkv,.flv,.ts,.m2ts,.rmvb"
         selected-icon="solar:video-frame-play-horizontal-bold-duotone"
-        selected-bg-class="bg-cyan-50"
-        selected-icon-class="text-cyan-500 border-cyan-100"
       />
     </template>
 
@@ -85,7 +81,6 @@ const handleAction = async () => {
       <ToolSettingsCard
         card-title="导出参数设定"
         card-title-icon="solar:settings-bold-duotone"
-        card-title-icon-class="text-cyan-500"
       >
         <el-form label-position="top" class="flex-1 flex flex-col">
           <el-form-item label="选择需要转出的目标格式" class="mb-6">
@@ -115,12 +110,20 @@ const handleAction = async () => {
           </el-form-item>
 
           <div
-            class="p-3 bg-cyan-50 rounded-xl border border-cyan-100/50 mb-auto"
+            class="p-3 rounded-xl border mb-auto"
+            style="
+              background: var(--page-accent-light);
+              border-color: var(--page-accent-border);
+            "
           >
-            <p class="text-xs text-cyan-700 leading-relaxed font-medium">
+            <p
+              class="text-xs leading-relaxed font-medium"
+              style="color: var(--page-accent-text, var(--page-accent))"
+            >
               <Icon
                 icon="solar:info-circle-bold"
-                class="inline text-cyan-500 relative -top-[1px] mr-1"
+                class="inline relative -top-[1px] mr-1"
+                style="color: var(--page-accent)"
               />
               转换完成后自动下载。支持一键将视频分离为纯净 MP3 音频。
             </p>
@@ -132,12 +135,12 @@ const handleAction = async () => {
             type="primary"
             size="large"
             class="w-full !h-14 !text-lg !rounded-2xl !font-bold transition-all"
-            :class="
+            :class="!isProcessing && selectedFile ? 'shadow-lg' : ''"
+            :style="
               !isProcessing && selectedFile
-                ? 'shadow-lg shadow-cyan-500/30'
+                ? 'box-shadow: 0 10px 15px -3px var(--page-shadow, rgba(0,0,0,0.1))'
                 : ''
             "
-            color="#0ea5e9"
             :disabled="!selectedFile || isProcessing"
             :loading="isProcessing"
             @click="handleAction"

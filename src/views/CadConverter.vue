@@ -57,23 +57,19 @@ const handleConvert = async () => {
     title="CAD 版本转换"
     description="不装软件，在线把 DWG / DXF 转成低版本或其他格式"
     icon="solar:document-bold-duotone"
-    gradient="from-blue-500 to-indigo-500"
+    color="blue"
   >
     <!-- 左侧：上传区 -->
     <template #upload>
       <ToolUploader
         v-model="selectedFile"
         empty-icon="solar:cloud-upload-bold-duotone"
-        empty-icon-class="text-blue-400"
         empty-text="拖动 CAD 文件以添加"
-        accent-class="text-blue-500"
         hint="支持 .dwg 和 .dxf · 最大 1000MB"
         accept=".dwg,.dxf"
         :max-size-mb="1000"
         :on-validate="validateCadFile"
         selected-icon="solar:file-check-bold-duotone"
-        selected-bg-class="bg-blue-50"
-        selected-icon-class="text-blue-500 border-blue-100"
       />
     </template>
 
@@ -82,7 +78,6 @@ const handleConvert = async () => {
       <ToolSettingsCard
         card-title="转换设置"
         card-title-icon="solar:settings-bold-duotone"
-        card-title-icon-class="text-blue-500"
       >
         <el-form label-position="top" class="flex-1 flex flex-col">
           <el-form-item label="目标 CAD 版本">
@@ -116,13 +111,15 @@ const handleConvert = async () => {
               <Icon
                 v-if="conversionProgress === 100"
                 icon="solar:round-transfer-line-duotone"
-                class="animate-spin text-blue-500 text-base"
+                class="animate-spin text-base"
+                style="color: var(--page-accent)"
               />
               {{ progressStatusText || '正在解析文件...' }}
             </span>
             <span
               v-if="conversionProgress < 100"
-              class="text-xs font-black text-blue-600"
+              class="text-xs font-black"
+              style="color: var(--page-accent-text, var(--page-accent))"
               >{{ conversionProgress }}%</span
             >
           </div>
@@ -130,7 +127,6 @@ const handleConvert = async () => {
             :percentage="conversionProgress"
             :show-text="false"
             :stroke-width="8"
-            color="#3b82f6"
           />
         </div>
 
@@ -139,12 +135,12 @@ const handleConvert = async () => {
             type="primary"
             size="large"
             class="w-full !h-14 !text-lg !rounded-2xl !font-bold transition-all"
-            :class="
+            :class="!isConverting && selectedFile ? 'shadow-lg' : ''"
+            :style="
               !isConverting && selectedFile
-                ? 'shadow-lg shadow-blue-500/30'
+                ? 'box-shadow: 0 10px 15px -3px var(--page-shadow, rgba(0,0,0,0.1))'
                 : ''
             "
-            color="#3b82f6"
             :disabled="!selectedFile || isConverting"
             :loading="isConverting"
             @click="handleConvert"

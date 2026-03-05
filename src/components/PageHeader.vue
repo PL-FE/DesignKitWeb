@@ -5,15 +5,23 @@ defineProps<{
   title: string
   description: string
   icon: string
-  gradient: string
+  gradient?: string
 }>()
 </script>
 
 <template>
   <div class="flex items-center gap-4 mb-8">
     <div
-      class="w-12 h-12 rounded-xl shadow-md flex items-center justify-center text-white text-2xl flex-shrink-0 bg-gradient-to-tr"
-      :class="gradient"
+      class="w-12 h-12 rounded-xl shadow-md flex items-center justify-center text-white text-2xl flex-shrink-0"
+      :class="gradient ? gradient : 'bg-gradient-to-tr'"
+      :style="
+        gradient
+          ? {}
+          : {
+              backgroundImage:
+                'linear-gradient(to top right, var(--el-color-primary-dark-2), var(--el-color-primary-light-3))',
+            }
+      "
     >
       <Icon :icon="icon" />
     </div>

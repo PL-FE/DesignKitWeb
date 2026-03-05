@@ -68,7 +68,7 @@ const handleAction = async () => {
     title="视频快速编辑"
     description="静音、变速、裁剪画面比例，常用操作一步搞定"
     icon="solar:scissors-bold-duotone"
-    gradient="from-rose-500 to-pink-500"
+    color="pink"
     :left-span="12"
     :right-span="12"
   >
@@ -77,14 +77,10 @@ const handleAction = async () => {
       <ToolUploader
         v-model="selectedFile"
         empty-icon="solar:video-library-bold-duotone"
-        empty-icon-class="text-rose-400"
         empty-text="拖拽需要编辑的视频"
-        accent-class="text-rose-500"
         hint="支持 MP4 · MOV · MKV · AVI · WebM 等常见视频格式，输出 MP4 · 最大 2GB"
         accept="video/*,.mkv,.flv,.ts,.m2ts,.rmvb"
         selected-icon="solar:video-frame-play-horizontal-bold-duotone"
-        selected-bg-class="bg-rose-50"
-        selected-icon-class="text-rose-500 border-rose-100"
       />
     </template>
 
@@ -93,7 +89,6 @@ const handleAction = async () => {
       <ToolSettingsCard
         card-title="编辑参数"
         card-title-icon="solar:settings-bold-duotone"
-        card-title-icon-class="text-rose-500"
       >
         <el-form label-position="top" class="flex-1 flex flex-col">
           <div class="grid grid-cols-2 gap-4">
@@ -151,11 +146,16 @@ const handleAction = async () => {
 
           <!-- 静音开关 -->
           <div
-            class="p-4 bg-rose-50 rounded-xl border border-rose-100/50 mb-auto mt-2 flex items-center justify-between"
+            class="p-4 rounded-xl border mb-auto mt-2 flex items-center justify-between"
+            style="
+              background: var(--page-accent-light);
+              border-color: var(--page-accent-border);
+            "
           >
             <div class="flex items-center gap-3">
               <div
-                class="w-10 h-10 rounded-full bg-white text-rose-500 shadow-sm flex items-center justify-center flex-shrink-0"
+                class="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center flex-shrink-0"
+                style="color: var(--page-accent)"
               >
                 <Icon icon="solar:volume-cross-bold-duotone" class="text-xl" />
               </div>
@@ -166,7 +166,7 @@ const handleAction = async () => {
                 </div>
               </div>
             </div>
-            <el-switch v-model="removeAudio" active-color="#f43f5e" />
+            <el-switch v-model="removeAudio" />
           </div>
         </el-form>
 
@@ -175,12 +175,12 @@ const handleAction = async () => {
             type="primary"
             size="large"
             class="w-full !h-14 !text-lg !rounded-2xl !font-bold transition-all"
-            :class="
+            :class="!isProcessing && selectedFile ? 'shadow-lg' : ''"
+            :style="
               !isProcessing && selectedFile
-                ? 'shadow-lg shadow-rose-500/30'
+                ? 'box-shadow: 0 10px 15px -3px var(--page-shadow, rgba(0,0,0,0.1))'
                 : ''
             "
-            color="#f43f5e"
             :disabled="!selectedFile || isProcessing"
             :loading="isProcessing"
             @click="handleAction"

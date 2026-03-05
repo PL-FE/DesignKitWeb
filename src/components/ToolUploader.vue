@@ -8,12 +8,8 @@ const props = withDefaults(
     modelValue: File | null
     /** 空状态大图标 */
     emptyIcon: string
-    /** 空状态图标颜色类，如 'text-cyan-400' */
-    emptyIconClass: string
     /** 空状态主提示文字 */
     emptyText: string
-    /** "点击浏览"颜色类，如 'text-cyan-500' */
-    accentClass: string
     /** 格式/大小提示（可选） */
     hint?: string
     /** el-upload accept 属性 */
@@ -24,10 +20,6 @@ const props = withDefaults(
     onValidate?: (file: UploadRawFile) => boolean | string
     /** 选中状态的文件图标 */
     selectedIcon?: string
-    /** 选中状态图标区域的背景色类，如 'bg-cyan-50' */
-    selectedBgClass?: string
-    /** 选中状态图标区域的颜色+边框类，如 'text-cyan-500 border-cyan-100' */
-    selectedIconClass?: string
     /** 卡片最小高度类 */
     minHeight?: string
     /** 紧凑模式：减少空状态 padding，适合高度受限的场景 */
@@ -36,8 +28,6 @@ const props = withDefaults(
   {
     maxSizeMb: 2000,
     selectedIcon: 'solar:video-library-bold-duotone',
-    selectedBgClass: 'bg-slate-50',
-    selectedIconClass: 'text-slate-400 border-slate-100',
     minHeight: 'min-h-[300px]',
     compact: false,
   }
@@ -99,13 +89,15 @@ const handleRemove = () => {
         <Icon
           :icon="emptyIcon"
           :class="[
-            'mb-3 inline-block',
-            emptyIconClass,
+            'mb-3 inline-block opacity-70',
             compact ? 'text-4xl' : 'text-6xl',
           ]"
+          style="color: var(--page-accent)"
         />
         <div class="text-base font-bold text-slate-700 mb-1">
-          {{ emptyText }}，或<em :class="['not-italic', accentClass]"
+          {{ emptyText }}，或<em
+            class="not-italic"
+            style="color: var(--page-accent)"
             >点击浏览</em
           >
         </div>
@@ -122,11 +114,12 @@ const handleRemove = () => {
             class="flex flex-col sm:flex-row items-center sm:items-start gap-4 p-6 md:p-8 w-full h-full z-10 text-left cursor-default"
           >
             <div
-              :class="[
-                'w-20 h-20 rounded-xl flex items-center justify-center text-4xl shadow-sm border flex-shrink-0',
-                selectedBgClass,
-                selectedIconClass,
-              ]"
+              class="w-20 h-20 rounded-xl flex items-center justify-center text-4xl shadow-sm border flex-shrink-0"
+              style="
+                background: var(--page-accent-light);
+                color: var(--page-accent);
+                border-color: var(--page-accent-border);
+              "
             >
               <Icon :icon="selectedIcon" />
             </div>

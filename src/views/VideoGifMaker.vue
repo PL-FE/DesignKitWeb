@@ -82,21 +82,17 @@ const handleAction = async () => {
     title="截帧 / 转 GIF"
     description="截取某段视频画面，或导出为 GIF / WebP 动图"
     icon="solar:camera-bold-duotone"
-    gradient="from-amber-400 to-orange-500"
+    color="amber"
   >
     <!-- 左侧：上传区 -->
     <template #upload>
       <ToolUploader
         v-model="selectedFile"
         empty-icon="solar:clapperboard-play-bold-duotone"
-        empty-icon-class="text-amber-400"
         empty-text="拖拽所需处理的视频"
-        accent-class="text-amber-500"
         hint="支持 MP4 · MOV · MKV · AVI · WebM 等常见视频格式 · 最大 2GB"
         accept="video/*,.mkv,.flv,.ts,.m2ts,.rmvb"
         selected-icon="solar:video-library-bold-duotone"
-        selected-bg-class="bg-amber-50"
-        selected-icon-class="text-amber-500 border-amber-100"
       />
     </template>
 
@@ -105,7 +101,6 @@ const handleAction = async () => {
       <ToolSettingsCard
         card-title="参数配置"
         card-title-icon="solar:settings-bold-duotone"
-        card-title-icon-class="text-amber-500"
       >
         <el-form label-position="top" class="flex-1 flex flex-col">
           <el-form-item label="输出类型">
@@ -153,7 +148,12 @@ const handleAction = async () => {
               </el-form-item>
               <el-form-item v-else label="说明">
                 <div
-                  class="w-full h-10 flex items-center text-xs text-amber-600 bg-amber-50 rounded px-3 border border-amber-100"
+                  class="w-full h-10 flex items-center text-xs rounded px-3 border"
+                  style="
+                    background: var(--page-accent-light);
+                    border-color: var(--page-accent-border);
+                    color: var(--page-accent-text, var(--page-accent));
+                  "
                 >
                   仅提取单张图片
                 </div>
@@ -173,7 +173,7 @@ const handleAction = async () => {
                 :step="1"
                 class="flex-1"
               />
-              <span class="font-bold text-amber-600 w-8">{{
+              <span class="font-bold w-8" style="color: var(--page-accent)">{{
                 videoStore.preferredFps
               }}</span>
             </div>
@@ -188,12 +188,12 @@ const handleAction = async () => {
             type="primary"
             size="large"
             class="w-full !h-14 !text-lg !rounded-2xl !font-bold transition-all"
-            :class="
+            :class="!isProcessing && selectedFile ? 'shadow-lg' : ''"
+            :style="
               !isProcessing && selectedFile
-                ? 'shadow-lg shadow-amber-500/30'
+                ? 'box-shadow: 0 10px 15px -3px var(--page-shadow, rgba(0,0,0,0.1))'
                 : ''
             "
-            color="#f59e0b"
             :disabled="!selectedFile || isProcessing"
             :loading="isProcessing"
             @click="handleAction"
@@ -218,12 +218,3 @@ const handleAction = async () => {
     </template>
   </ToolPageLayout>
 </template>
-
-<style scoped>
-:deep(.el-slider__bar) {
-  background-color: #f59e0b;
-}
-:deep(.el-slider__button) {
-  border-color: #f59e0b;
-}
-</style>

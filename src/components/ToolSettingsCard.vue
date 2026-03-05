@@ -7,8 +7,6 @@ withDefaults(
     cardTitle: string
     /** 标题图标 */
     cardTitleIcon: string
-    /** 标题图标颜色类，如 'text-cyan-500' */
-    cardTitleIconClass: string
   }>(),
   {}
 )
@@ -21,7 +19,11 @@ withDefaults(
   >
     <template #header>
       <div class="flex items-center gap-2 font-bold text-slate-800">
-        <Icon :icon="cardTitleIcon" :class="['text-lg', cardTitleIconClass]" />
+        <Icon
+          :icon="cardTitleIcon"
+          class="text-lg"
+          style="color: var(--page-accent)"
+        />
         {{ cardTitle }}
       </div>
     </template>

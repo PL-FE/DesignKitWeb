@@ -21,14 +21,14 @@
         ，你的本地工具箱
       </h2>
       <p
-        class="text-slate-500 max-w-2xl mx-auto text-base sm:text-lg font-medium leading-relaxed px-4"
+        class="text-slate-500 max-w-2xl mx-auto text-base sm:text-lg font-medium leading-relaxed px-4 font-bold"
       >
-        设计和工程常用的小工具，文件不保存，处理完直接删除。
+        设计和工程常用的小工具，<span>文件不保存，处理完直接删除。</span>
       </p>
     </div>
 
     <!-- 隐私保障说明 -->
-    <div
+    <!-- <div
       class="mb-6 sm:mb-8 privacy-banner rounded-2xl px-6 py-4 animate-fade-in-up flex items-center gap-4"
       style="animation-delay: 100ms"
     >
@@ -48,7 +48,7 @@
           所有文件仅在处理期间短暂使用，完成后立即释放或删除，不留存任何副本。
         </p>
       </div>
-    </div>
+    </div> -->
 
     <!-- Tools Grid -->
     <div

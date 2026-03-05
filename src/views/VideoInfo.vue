@@ -51,29 +51,34 @@ const parseFps = (val: string) => {
     title="媒体信息查看"
     description="查看视频或音频文件的编码、分辨率、帧率、码率等详细参数"
     icon="solar:info-square-bold-duotone"
-    gradient="from-emerald-500 to-teal-500"
+    color="emerald"
   >
     <!-- 左侧：上传区 -->
     <template #upload>
       <ToolUploader
         v-model="selectedFile"
         empty-icon="solar:video-frame-bold-duotone"
-        empty-icon-class="text-teal-400"
         empty-text="拖拽音视频文件"
-        accent-class="text-teal-500"
         hint="支持 MP4 · MOV · MKV · AVI · FLV · WebM · MP3 · AAC · WAV 等"
         accept="video/*,audio/*,.mkv,.flv,.ts,.m2ts,.rmvb"
         selected-icon="solar:clapperboard-play-bold-duotone"
-        selected-bg-class="bg-teal-50"
-        selected-icon-class="text-teal-500 border-teal-100"
       >
         <!-- 已选状态使用垂直居中展示 -->
         <template #selected="{ file, remove }">
           <div
-            class="flex flex-col items-center p-4 w-full h-full relative z-10 text-center cursor-default bg-teal-50/50 rounded-xl border border-teal-100/50"
+            class="flex flex-col items-center p-4 w-full h-full relative z-10 text-center cursor-default rounded-xl border"
+            style="
+              background: var(--page-accent-light);
+              border-color: var(--page-accent-border);
+            "
           >
             <div
-              class="w-16 h-16 rounded-xl bg-teal-100 text-teal-500 flex items-center justify-center text-3xl shadow-sm border border-teal-200"
+              class="w-16 h-16 rounded-xl flex items-center justify-center text-3xl shadow-sm border"
+              style="
+                background: var(--page-accent-light);
+                color: var(--page-accent);
+                border-color: var(--page-accent-border);
+              "
             >
               <Icon icon="solar:clapperboard-play-bold-duotone" />
             </div>
@@ -111,7 +116,6 @@ const parseFps = (val: string) => {
       <ToolSettingsCard
         card-title="参数详情"
         card-title-icon="solar:code-scan-bold-duotone"
-        card-title-icon-class="text-teal-500"
       >
         <!-- 空状态 -->
         <div
@@ -182,9 +186,11 @@ const parseFps = (val: string) => {
               class="mb-6"
             >
               <el-descriptions-item label="编码器" label-align="right">
-                <span class="font-bold text-teal-600">{{
-                  stream.codec_name
-                }}</span>
+                <span
+                  class="font-bold"
+                  style="color: var(--page-accent-text, var(--page-accent))"
+                  >{{ stream.codec_name }}</span
+                >
                 ({{ stream.codec_long_name }})
               </el-descriptions-item>
               <template v-if="stream.codec_type === 'video'">
@@ -226,12 +232,12 @@ const parseFps = (val: string) => {
             type="primary"
             size="large"
             class="w-full !h-14 !text-lg !rounded-2xl !font-bold transition-all"
-            :class="
+            :class="!isProcessing && selectedFile ? 'shadow-lg' : ''"
+            :style="
               !isProcessing && selectedFile
-                ? 'shadow-lg shadow-teal-500/30'
+                ? 'box-shadow: 0 10px 15px -3px var(--page-shadow, rgba(0,0,0,0.1))'
                 : ''
             "
-            color="#14b8a6"
             :disabled="!selectedFile || isProcessing"
             :loading="isProcessing"
             @click="handleAction"

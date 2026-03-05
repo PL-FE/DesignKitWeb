@@ -91,16 +91,14 @@ function download() {
     title="图片压缩"
     description="压到指定大小，格式随便选，顺带能清 EXIF 信息"
     icon="solar:gallery-minimalistic-bold-duotone"
-    gradient="from-violet-500 to-fuchsia-500"
+    color="violet"
   >
     <!-- 左侧：上传区（含图片预览） -->
     <template #upload>
       <ToolUploader
         :model-value="file"
         empty-icon="solar:upload-linear"
-        empty-icon-class="text-violet-400"
         empty-text="将图片拖曳至此"
-        accent-class="text-violet-500"
         hint="支持 JPG · PNG · WebP · BMP · TIFF"
         :accept="ACCEPTED_TYPES"
         :max-size-mb="500"
@@ -155,7 +153,6 @@ function download() {
       <ToolSettingsCard
         card-title="压制设置"
         card-title-icon="solar:settings-minimalistic-bold-duotone"
-        card-title-icon-class="text-violet-500"
       >
         <!-- 结果展示（有结果时显示，无结果时显示配置） -->
         <template v-if="result">
@@ -165,7 +162,8 @@ function download() {
             >
               <Icon
                 icon="solar:check-circle-bold-duotone"
-                class="text-emerald-500 text-base"
+                class="text-base"
+                style="color: var(--page-accent)"
               />
               压缩完成
             </h4>
@@ -192,12 +190,17 @@ function download() {
               <el-col :span="8">
                 <div
                   class="bg-emerald-50 border border-emerald-100 rounded-xl p-3 text-center relative transform scale-105 shadow-sm shadow-emerald-100/50 z-10"
+                  style="
+                    background: var(--page-accent);
+                    border-color: var(--page-accent);
+                    box-shadow: 0 4px 6px -1px var(--page-shadow, rgba(0, 0, 0, 0.1));
+                  "
                 >
                   <span
-                    class="block text-[10px] font-bold text-emerald-500 uppercase tracking-widest mb-1"
+                    class="block text-[10px] font-bold text-white uppercase tracking-widest mb-1"
                     >减少了</span
                   >
-                  <span class="font-black text-emerald-600 text-base"
+                  <span class="font-black text-white text-base"
                     >{{ result.ratio
                     }}<span class="text-[10px] ml-0.5">%</span></span
                   >
@@ -206,12 +209,19 @@ function download() {
               <el-col :span="8">
                 <div
                   class="bg-violet-50 border border-violet-100 rounded-xl p-3 text-center"
+                  style="
+                    background: var(--page-accent-light);
+                    border-color: var(--page-accent-border);
+                  "
                 >
                   <span
-                    class="block text-[10px] font-bold text-violet-500 uppercase tracking-widest mb-1"
+                    class="block text-[10px] font-bold uppercase tracking-widest mb-1"
+                    style="color: var(--page-accent)"
                     >之后</span
                   >
-                  <span class="font-black text-violet-700 text-sm"
+                  <span
+                    class="font-black text-sm"
+                    style="color: var(--page-accent-text, var(--page-accent))"
                     >{{ result.compressedKb
                     }}<span class="text-[10px] ml-0.5">KB</span></span
                   >
@@ -224,14 +234,7 @@ function download() {
         <!-- 配置区 -->
         <template v-else>
           <el-form label-position="top">
-            <el-form-item
-              label="压缩模式"
-              style="
-                --el-color-primary: #8b5cf6;
-                --el-color-primary-light-3: #a78bfa;
-                --el-color-primary-dark-2: #7c3aed;
-              "
-            >
+            <el-form-item label="压缩模式">
               <el-radio-group
                 v-model="compressMode"
                 size="large"
@@ -288,10 +291,7 @@ function download() {
                     <span class="text-sm font-medium text-slate-600"
                       >清除 EXIF</span
                     >
-                    <el-switch
-                      v-model="stripExif"
-                      style="--el-switch-on-color: #8b5cf6"
-                    />
+                    <el-switch v-model="stripExif" />
                   </div>
                 </el-form-item>
               </el-col>
@@ -355,12 +355,12 @@ function download() {
             type="primary"
             size="large"
             class="w-full !h-14 !text-lg !rounded-2xl !font-bold transition-all"
-            :class="
+            :class="!loading && file ? 'shadow-lg hover:-translate-y-0.5' : ''"
+            :style="
               !loading && file
-                ? 'shadow-lg shadow-violet-500/30 hover:-translate-y-0.5'
+                ? 'box-shadow: 0 10px 15px -3px var(--page-shadow, rgba(0,0,0,0.1))'
                 : ''
             "
-            color="#8b5cf6"
             :loading="loading"
             :disabled="!file"
             @click="compress"
@@ -406,38 +406,5 @@ function download() {
   flex: 1;
   width: 100%;
   border-radius: 8px !important;
-}
-
-/* ===== 紫色主题覆盖 ===== */
-/* el-radio-button 未选中态 hover 颜色 */
-:deep(.el-radio-button__inner:hover) {
-  color: #8b5cf6;
-}
-
-/* el-slider 进度条 & 按钮 */
-:deep(.el-slider__bar) {
-  background-color: #8b5cf6;
-}
-:deep(.el-slider__button) {
-  border-color: #8b5cf6;
-}
-:deep(.el-slider__button:hover),
-:deep(.el-slider__button.hover),
-:deep(.el-slider__button.dragging) {
-  border-color: #7c3aed;
-}
-
-/* el-upload "点击浏览" em 标签文字颜色 */
-:deep(.el-upload__text em) {
-  color: #8b5cf6 !important;
-}
-
-/* el-select / el-input focus 时的边框和光圈 */
-:deep(.el-input.is-focus .el-input__wrapper),
-:deep(.el-input__wrapper:focus-within) {
-  box-shadow: 0 0 0 1px #8b5cf6 inset !important;
-}
-:deep(.el-select .el-input.is-focus .el-input__wrapper) {
-  box-shadow: 0 0 0 1px #8b5cf6 inset !important;
 }
 </style>

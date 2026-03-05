@@ -72,21 +72,17 @@ const levelItems = [
     title="视频压缩"
     description="三档压缩力度，H.264 编码，文件变小但画质还行"
     icon="solar:video-frame-cut-bold-duotone"
-    gradient="from-fuchsia-500 to-purple-500"
+    color="fuchsia"
   >
     <!-- 左侧：上传区 -->
     <template #upload>
       <ToolUploader
         v-model="selectedFile"
         empty-icon="solar:database-bold-duotone"
-        empty-icon-class="text-fuchsia-400"
         empty-text="拖拽需要压缩的视频"
-        accent-class="text-fuchsia-500"
         hint="支持 MP4 · MOV · MKV · AVI · FLV · WebM 等，输出固定为 MP4 · 最大 2GB"
         accept="video/*,.mkv,.flv,.ts,.m2ts,.rmvb"
         selected-icon="solar:video-library-bold-duotone"
-        selected-bg-class="bg-fuchsia-50"
-        selected-icon-class="text-fuchsia-500 border-fuchsia-100"
       />
     </template>
 
@@ -95,7 +91,6 @@ const levelItems = [
       <ToolSettingsCard
         card-title="压缩级别设定"
         card-title-icon="solar:settings-bold-duotone"
-        card-title-icon-class="text-fuchsia-500"
       >
         <!-- 压缩档位选择 -->
         <div class="grid grid-cols-1 gap-3 mb-6">
@@ -105,8 +100,13 @@ const levelItems = [
             class="border-2 rounded-xl p-3 cursor-pointer transition-all flex items-center gap-4"
             :class="
               videoStore.preferredCompressLevel === item.key
-                ? 'border-fuchsia-500 bg-fuchsia-50'
-                : 'border-slate-100 hover:border-fuchsia-300 hover:bg-slate-50'
+                ? ''
+                : 'border-slate-100 hover:border-slate-300 hover:bg-slate-50'
+            "
+            :style="
+              videoStore.preferredCompressLevel === item.key
+                ? 'border-color: var(--page-accent); background: var(--page-accent-light)'
+                : ''
             "
             @click="handleLevelSelect(item.key)"
           >
@@ -119,8 +119,13 @@ const levelItems = [
               class="text-2xl flex-shrink-0"
               :class="
                 videoStore.preferredCompressLevel === item.key
-                  ? 'text-fuchsia-600'
+                  ? ''
                   : 'text-slate-400'
+              "
+              :style="
+                videoStore.preferredCompressLevel === item.key
+                  ? 'color: var(--page-accent)'
+                  : ''
               "
             />
             <div>
@@ -135,12 +140,12 @@ const levelItems = [
             type="primary"
             size="large"
             class="w-full !h-14 !text-lg !rounded-2xl !font-bold transition-all"
-            :class="
+            :class="!isProcessing && selectedFile ? 'shadow-lg' : ''"
+            :style="
               !isProcessing && selectedFile
-                ? 'shadow-lg shadow-fuchsia-500/30'
+                ? 'box-shadow: 0 10px 15px -3px var(--page-shadow, rgba(0,0,0,0.1))'
                 : ''
             "
-            color="#c026d3"
             :disabled="!selectedFile || isProcessing"
             :loading="isProcessing"
             @click="handleAction"
