@@ -5,7 +5,7 @@ import AppFooter from '@/components/AppFooter.vue'
 
 <template>
   <div
-    class="min-h-screen bg-[#F8F9FB] flex flex-col font-sans relative overflow-x-hidden transition-colors selection:bg-violet-500/20 selection:text-violet-700"
+    class="h-screen bg-[#F8F9FB] flex flex-col font-sans relative overflow-hidden transition-colors selection:bg-violet-500/20 selection:text-violet-700"
   >
     <!-- 全局背景艺术氛围（光晕特效） -->
     <div
@@ -16,11 +16,11 @@ import AppFooter from '@/components/AppFooter.vue'
     ></div>
 
     <!-- Header 响应式 -->
-    <AppHeader />
+    <AppHeader class="flex-shrink-0" />
 
     <!-- Main View -->
     <main
-      class="flex-1 w-full max-w-7xl mx-auto flex flex-col relative z-10 w-full pb-8"
+      class="flex-1 w-full max-w-7xl mx-auto flex flex-col relative z-10 overflow-y-auto overflow-x-hidden pb-8 custom-scrollbar"
     >
       <router-view v-slot="{ Component }">
         <transition name="page-fade" mode="out-in">
@@ -30,7 +30,7 @@ import AppFooter from '@/components/AppFooter.vue'
     </main>
 
     <!-- Footer -->
-    <AppFooter />
+    <AppFooter class="flex-shrink-0" />
   </div>
 </template>
 
@@ -60,18 +60,18 @@ body {
 }
 
 /* 隐藏部分浏览器的滚动条样式并保持优美 */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
-::-webkit-scrollbar-track {
+.custom-scrollbar::-webkit-scrollbar-track {
   background: transparent;
 }
-::-webkit-scrollbar-thumb {
+.custom-scrollbar::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 4px;
 }
-::-webkit-scrollbar-thumb:hover {
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
 </style>

@@ -1,18 +1,18 @@
 <template>
   <div
-    class="max-w-7xl mx-auto py-8 md:py-16 px-4 sm:px-6 lg:px-8 w-full box-border overflow-hidden"
+    class="max-w-7xl mx-auto py-6 md:py-10 px-4 sm:px-6 lg:px-8 w-full box-border overflow-hidden"
   >
     <!-- Hero Header -->
-    <div class="text-center mb-12 sm:mb-16 animate-fade-in-up">
+    <div class="text-center mb-8 sm:mb-10 animate-fade-in-up">
       <el-tag
         effect="light"
         round
-        class="mb-6 !border-slate-200 !text-slate-600 !bg-slate-100 font-semibold tracking-widest px-4"
+        class="mb-4 !border-slate-200 !text-slate-600 !bg-slate-100 font-semibold tracking-widest px-4"
       >
         All-in-one Toolkit
       </el-tag>
       <h2
-        class="text-3xl sm:text-4xl md:text-5xl font-black text-slate-800 tracking-tight mb-4 leading-tight"
+        class="text-3xl sm:text-4xl md:text-5xl font-black text-slate-800 tracking-tight mb-3 leading-tight"
       >
         探索
         <span
@@ -30,7 +30,7 @@
 
     <!-- 隐私保障说明 -->
     <div
-      class="mb-8 sm:mb-10 privacy-banner rounded-2xl px-6 py-4 animate-fade-in-up flex items-center gap-4"
+      class="mb-6 sm:mb-8 privacy-banner rounded-2xl px-6 py-4 animate-fade-in-up flex items-center gap-4"
       style="animation-delay: 100ms"
     >
       <div
@@ -53,7 +53,7 @@
 
     <!-- Tools Grid -->
     <div
-      class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 w-full z-10 relative"
+      class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 w-full z-10 relative"
     >
       <div
         v-for="(tool, index) in tools"
