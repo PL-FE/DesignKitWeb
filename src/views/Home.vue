@@ -1,6 +1,6 @@
 <template>
   <div
-    class="max-w-7xl mx-auto py-6 md:py-10 px-4 sm:px-6 lg:px-8 w-full box-border overflow-hidden"
+    class="max-w-7xl mx-auto py-6 md:py-10 px-4 sm:px-6 lg:px-8 w-full box-border"
   >
     <!-- Hero Header -->
     <div class="text-center mb-8 sm:mb-10 animate-fade-in-up">
@@ -116,6 +116,49 @@ const tools = [
     icon: 'solar:gallery-minimalistic-bold-duotone',
     route: '/image-compressor',
     color: 'from-violet-500 to-pink-500',
+  },
+  {
+    id: 'video-info',
+    name: '信息透视仪',
+    description:
+      '极速解析音视频文件的内置参数与轨道数据（分辨率、编码、码率等）',
+    icon: 'solar:info-square-bold-duotone',
+    route: '/video-info',
+    color: 'from-emerald-500 to-teal-500',
+  },
+  {
+    id: 'video-converter',
+    name: '全能格式转换',
+    description: '视频格式极速转换，手机兼容性修复，一键提取无损音频流',
+    icon: 'solar:video-frame-replace-bold-duotone',
+    route: '/video-converter',
+    color: 'from-cyan-500 to-blue-500',
+  },
+  {
+    id: 'video-compressor',
+    name: '视频体积压缩',
+    description:
+      '采用高阶 H.264 算法，提供极其简单的三档位压缩参数，画质损失极小。',
+    icon: 'solar:video-frame-cut-bold-duotone',
+    route: '/video-compressor',
+    color: 'from-fuchsia-500 to-purple-500',
+  },
+  {
+    id: 'video-gif',
+    name: '动图制造与封面提炼',
+    description:
+      '通过起止时间精准截取视频原画封面，或转换为丝滑的兼容 GIF/WebP 图片。',
+    icon: 'solar:camera-bold-duotone',
+    route: '/video-gif',
+    color: 'from-amber-400 to-orange-500',
+  },
+  {
+    id: 'video-editor',
+    name: '快捷轻剪辑核心',
+    description: '集成静音、倍速调整及高级画面长宽裁剪指令等实用工具。',
+    icon: 'solar:scissors-bold-duotone',
+    route: '/video-editor',
+    color: 'from-rose-500 to-pink-500',
   },
 ]
 </script>

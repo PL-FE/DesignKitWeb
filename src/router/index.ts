@@ -24,6 +24,36 @@ const router = createRouter({
       component: ImageCompressor,
       meta: { title: '图片压缩 - DesignKit' },
     },
+    {
+      path: '/video-info',
+      name: 'video-info',
+      component: () => import('@/views/VideoInfo.vue'),
+      meta: { title: '媒体信息透视仪 - DesignKit' },
+    },
+    {
+      path: '/video-converter',
+      name: 'video-converter',
+      component: () => import('@/views/VideoConverter.vue'),
+      meta: { title: '全能格式转换中心 - DesignKit' },
+    },
+    {
+      path: '/video-compressor',
+      name: 'video-compressor',
+      component: () => import('@/views/VideoCompressor.vue'),
+      meta: { title: '视频体积压缩器 - DesignKit' },
+    },
+    {
+      path: '/video-gif',
+      name: 'video-gif',
+      component: () => import('@/views/VideoGifMaker.vue'),
+      meta: { title: '动图制造与封面提炼 - DesignKit' },
+    },
+    {
+      path: '/video-editor',
+      name: 'video-editor',
+      component: () => import('@/views/VideoEditor.vue'),
+      meta: { title: '快捷轻剪辑工具 - DesignKit' },
+    },
   ],
 })
 
