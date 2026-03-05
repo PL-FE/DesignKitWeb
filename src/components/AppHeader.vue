@@ -59,7 +59,7 @@ const route = useRoute()
           @click="router.push('/')"
           class="hidden md:flex items-center gap-2 px-4 py-2 text-sm font-bold text-slate-500 bg-white border-2 border-slate-100 rounded-xl hover:text-slate-900 hover:border-slate-300 transition-all active:scale-95"
         >
-          返回套件盒子
+          返回首页
         </button>
         <span
           v-else

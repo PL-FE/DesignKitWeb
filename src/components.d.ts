@@ -37,5 +37,8 @@ declare module 'vue' {
     PageHeader: typeof import('./components/PageHeader.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    ToolPageLayout: typeof import('./components/ToolPageLayout.vue')['default']
+    ToolSettingsCard: typeof import('./components/ToolSettingsCard.vue')['default']
+    ToolUploader: typeof import('./components/ToolUploader.vue')['default']
   }
 }

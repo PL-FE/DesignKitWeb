@@ -14,17 +14,16 @@
       <h2
         class="text-3xl sm:text-4xl md:text-5xl font-black text-slate-800 tracking-tight mb-3 leading-tight"
       >
-        探索
         <span
           class="text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-blue-600"
           >DesignKit</span
         >
-        的极简体验
+        ，你的本地工具箱
       </h2>
       <p
         class="text-slate-500 max-w-2xl mx-auto text-base sm:text-lg font-medium leading-relaxed px-4"
       >
-        面向设计与工程领域的现代化超轻量在线工具引擎。
+        设计和工程常用的小工具，文件不保存，处理完直接删除。
       </p>
     </div>
 
@@ -103,7 +102,7 @@ const tools = [
   {
     id: 'cad-converter',
     name: 'CAD 版本转换',
-    description: '无需安装专业软件，在线将 DWG、DXF 文件转换至低版本或其他格式',
+    description: '不装软件，直接在线把 DWG / DXF 转成低版本或其他格式',
     icon: 'solar:document-bold-duotone',
     route: '/cad-converter',
     color: 'from-blue-500 to-indigo-500',
@@ -111,51 +110,47 @@ const tools = [
   {
     id: 'image-compressor',
     name: '图片压缩',
-    description:
-      '指定压缩到目标大小，支持格式转换（JPEG / PNG / WebP）及 EXIF 清除',
+    description: '压到指定大小，顺带支持格式转换和 EXIF 信息清理',
     icon: 'solar:gallery-minimalistic-bold-duotone',
     route: '/image-compressor',
     color: 'from-violet-500 to-pink-500',
   },
   {
     id: 'video-info',
-    name: '信息透视仪',
-    description:
-      '极速解析音视频文件的内置参数与轨道数据（分辨率、编码、码率等）',
+    name: '媒体信息查看',
+    description: '查看视频/音频文件的分辨率、编码、帧率、码率等详细参数',
     icon: 'solar:info-square-bold-duotone',
     route: '/video-info',
     color: 'from-emerald-500 to-teal-500',
   },
   {
     id: 'video-converter',
-    name: '全能格式转换',
-    description: '视频格式极速转换，手机兼容性修复，一键提取无损音频流',
+    name: '视频格式转换',
+    description: '转格式、修兼容性，或者把音轨单独提取出来',
     icon: 'solar:video-frame-replace-bold-duotone',
     route: '/video-converter',
     color: 'from-cyan-500 to-blue-500',
   },
   {
     id: 'video-compressor',
-    name: '视频体积压缩',
-    description:
-      '采用高阶 H.264 算法，提供极其简单的三档位压缩参数，画质损失极小。',
+    name: '视频压缩',
+    description: '三档压缩力度自由选，H.264 编码，文件变小但画质还行',
     icon: 'solar:video-frame-cut-bold-duotone',
     route: '/video-compressor',
     color: 'from-fuchsia-500 to-purple-500',
   },
   {
     id: 'video-gif',
-    name: '动图制造与封面提炼',
-    description:
-      '通过起止时间精准截取视频原画封面，或转换为丝滑的兼容 GIF/WebP 图片。',
+    name: '截帧 / 转 GIF',
+    description: '截取某段视频画面，或导出为 GIF / WebP 动图',
     icon: 'solar:camera-bold-duotone',
     route: '/video-gif',
     color: 'from-amber-400 to-orange-500',
   },
   {
     id: 'video-editor',
-    name: '快捷轻剪辑核心',
-    description: '集成静音、倍速调整及高级画面长宽裁剪指令等实用工具。',
+    name: '视频快速编辑',
+    description: '静音、变速、裁剪画面比例，常用操作一步搞定',
     icon: 'solar:scissors-bold-duotone',
     route: '/video-editor',
     color: 'from-rose-500 to-pink-500',
