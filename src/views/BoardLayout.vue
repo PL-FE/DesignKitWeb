@@ -163,13 +163,41 @@ const onDragEnd = () => {
 
 // 用于在相对容器中缩放预览画板适配屏幕
 const previewContainer = ref<HTMLElement | null>(null)
+
+// 动态获取容器宽度，保证自适应计算 scale
+const containerWidth = ref(800)
+const containerHeight = ref(600)
+
+let resizeObserver: ResizeObserver | null = null
+
+// 使用 ResizeObserver 监听外层容器大小变动，保证不同屏幕下尺寸自适应缩放
+watch(
+  previewContainer,
+  (newVal) => {
+    if (resizeObserver) {
+      resizeObserver.disconnect()
+    }
+    if (newVal) {
+      resizeObserver = new ResizeObserver((entries) => {
+        for (let entry of entries) {
+          // 留出一定的边距进行缩放 (左右各留 40px padding)
+          containerWidth.value = entry.contentRect.width - 80
+          containerHeight.value = entry.contentRect.height - 80
+        }
+      })
+      resizeObserver.observe(newVal)
+    }
+  },
+  { immediate: true }
+)
+
 const scaleRatio = computed(() => {
-  if (!previewContainer.value) return 1
-  // 假设预览区域最大 800x600，留点边距
-  const containerW = 800
-  const containerH = 600
-  const ratioW = containerW / form.value.width
-  const ratioH = containerH / form.value.height
+  if (containerWidth.value <= 0 || containerHeight.value <= 0) return 1
+
+  const ratioW = containerWidth.value / form.value.width
+  const ratioH = containerHeight.value / form.value.height
+
+  // 选择最小的一个比例，确保宽和高都不超出容器
   return Math.min(ratioW, ratioH, 1) // 不放大，只缩小
 })
 
