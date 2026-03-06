@@ -318,16 +318,38 @@ onUnmounted(() => {
                   transform: `scale(${scaleRatio})`,
                 }"
               >
-                <!-- 拖放排列层 -->
+                <!-- 静态网格序号层 (基于容器定位，固定不动且不被裁切) -->
+                <div class="absolute inset-0 z-20 pointer-events-none">
+                  <div
+                    v-for="(box, index) in layoutBoxes"
+                    :key="'slot-' + index"
+                    class="absolute"
+                    :style="{
+                      left: box.x + 'px',
+                      top: box.y + 'px',
+                      width: box.w + 'px',
+                      height: box.h + 'px',
+                    }"
+                  >
+                    <!-- 将角标序号放大，适应外层缩放，并加上更深的背景 -->
+                    <div
+                      class="absolute top-4 left-4 min-w-[48px] h-[48px] flex items-center justify-center bg-slate-900/85 text-white rounded-xl text-xl font-bold backdrop-blur-md shadow-lg border border-white/20"
+                    >
+                      {{ index + 1 }}
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 拖放排列层 (图元层) -->
                 <transition-group
                   name="grid-move"
                   tag="div"
-                  class="w-full h-full relative"
+                  class="w-full h-full relative z-10"
                 >
                   <div
                     v-for="(item, index) in localImages"
                     :key="item.id"
-                    class="absolute cursor-move overflow-hidden group hover:z-10"
+                    class="absolute cursor-move group hover:z-30"
                     draggable="true"
                     @dragstart="onDragStart(index, $event)"
                     @dragenter="onDragEnter(index)"
@@ -344,31 +366,31 @@ onUnmounted(() => {
                         : { display: 'none' }
                     "
                   >
-                    <!-- 内部图片裁剪适应效果 -->
-                    <img
-                      :src="item.url"
-                      class="w-full h-full object-cover pointer-events-none transition-transform duration-300 group-hover:scale-[1.03]"
-                    />
-
-                    <!-- 角标序号 -->
+                    <!-- 将 overflow-hidden 移入内部单独包裹 img，避免裁切组内的删除按钮 -->
                     <div
-                      class="absolute top-2 left-2 z-20 min-w-[28px] h-[28px] flex items-center justify-center bg-slate-900/70 text-white rounded-md text-xs font-bold backdrop-blur-md shadow-sm border border-white/20"
+                      class="absolute inset-0 overflow-hidden shadow-sm transition-shadow group-hover:shadow-md"
                     >
-                      {{ index + 1 }}
+                      <img
+                        :src="item.url"
+                        class="w-full h-full object-cover pointer-events-none transition-transform duration-300 group-hover:scale-[1.03]"
+                      />
                     </div>
 
-                    <!-- 删除按钮 -->
+                    <!-- 删除按钮 (不在 overflow-hidden 容器内，不被裁切) -->
                     <button
                       @click="handleRemove(index)"
-                      class="absolute top-2 right-2 z-20 w-8 h-8 rounded-full bg-red-500/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm hover:bg-red-500 shadow-md border border-white/20"
+                      class="absolute top-4 right-4 z-30 w-12 h-12 rounded-full bg-red-500/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm hover:bg-red-500 shadow-lg border border-white/20 pointer-events-auto"
                     >
-                      <Icon icon="solar:trash-bin-trash-bold" />
+                      <Icon
+                        icon="solar:trash-bin-trash-bold"
+                        class="text-2xl"
+                      />
                     </button>
 
-                    <!-- 拖拽提示层（可加可不加） -->
+                    <!-- 拖拽提示层 -->
                     <div
                       v-show="dragIndex === index"
-                      class="absolute inset-0 bg-emerald-500/20 border-2 border-emerald-500"
+                      class="absolute inset-0 bg-emerald-500/20 border-4 border-emerald-500 pointer-events-none z-30"
                     ></div>
                   </div>
                 </transition-group>
