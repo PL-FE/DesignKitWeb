@@ -352,7 +352,7 @@ onUnmounted(() => {
 
                     <!-- 角标序号 -->
                     <div
-                      class="absolute top-4 left-4 min-w-[32px] h-[32px] flex items-center justify-center bg-black/60 text-white rounded-lg text-sm font-bold backdrop-blur-sm shadow-md"
+                      class="absolute top-2 left-2 z-20 min-w-[28px] h-[28px] flex items-center justify-center bg-slate-900/70 text-white rounded-md text-xs font-bold backdrop-blur-md shadow-sm border border-white/20"
                     >
                       {{ index + 1 }}
                     </div>
@@ -360,7 +360,7 @@ onUnmounted(() => {
                     <!-- 删除按钮 -->
                     <button
                       @click="handleRemove(index)"
-                      class="absolute top-4 right-4 w-8 h-8 rounded-full bg-red-500/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm hover:bg-red-500"
+                      class="absolute top-2 right-2 z-20 w-8 h-8 rounded-full bg-red-500/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm hover:bg-red-500 shadow-md border border-white/20"
                     >
                       <Icon icon="solar:trash-bin-trash-bold" />
                     </button>
