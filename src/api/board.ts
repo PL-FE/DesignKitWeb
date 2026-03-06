@@ -1,19 +1,8 @@
 import request from './request'
 
 /**
- * 获取展板排版预览图 (PNG Blob)
- * @param formData 包含 files (图片), layout, width, height, gap, bg_color 等参数
- */
-export async function previewBoard(formData: FormData): Promise<Blob> {
-  const response = await request.post('/board/preview', formData, {
-    responseType: 'blob',
-    timeout: 60000 * 2, // 由于可能包含多图处理，超时时间稍微给长一点
-  })
-  return response.data
-}
-
-/**
  * 导出展板结果 (PSD Blob)
+ * @param formData 包含 files 以及 layout_data (包含前端计算好的坐标 JSON 字符串)
  */
 export async function exportBoard(
   formData: FormData
