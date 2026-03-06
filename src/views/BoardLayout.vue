@@ -4,6 +4,7 @@ import { ElMessage } from 'element-plus'
 import { Icon } from '@iconify/vue'
 import type { UploadFile, UploadFiles } from 'element-plus'
 import ToolPageLayout from '@/components/ToolPageLayout.vue'
+import BoardLayoutSelector from '@/components/BoardLayoutSelector.vue'
 import { exportBoard } from '@/api/board'
 import { calculateBoxes } from '@/utils/boardLayout'
 import type { LayoutBox } from '@/utils/boardLayout'
@@ -333,7 +334,7 @@ onUnmounted(() => {
 
           <div
             ref="previewContainer"
-            class="w-full h-[600px] flex items-center justify-center bg-slate-50 rounded-xl border border-dashed border-slate-300 overflow-hidden relative"
+            class="box-border w-full h-[600px] flex items-center justify-center bg-slate-50 rounded-xl border border-dashed border-slate-300 overflow-hidden relative"
           >
             <template v-if="localImages.length > 0">
               <!-- 根据计算出的 scale 缩小真画布 -->
@@ -459,14 +460,7 @@ onUnmounted(() => {
         <el-form label-position="top" size="large" class="space-y-2">
           <!-- 排版模板 -->
           <el-form-item label="排版模板">
-            <el-select v-model="form.layout" class="w-full">
-              <el-option
-                v-for="item in layouts"
-                :key="item.value"
-                :label="item.label"
-                :value="item.value"
-              />
-            </el-select>
+            <BoardLayoutSelector v-model="form.layout" :layouts="layouts" />
           </el-form-item>
 
           <!-- 画板尺寸 -->
