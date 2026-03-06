@@ -5,7 +5,7 @@ import { ElMessage } from 'element-plus'
 // 开发环境下为 /api （借助 vite.config.ts 代理到本地 8000 端口）
 // 生产环境下直接指向真实的线上服务地址
 const isDev = import.meta.env.DEV
-const baseURL = isDev ? '/api' : 'http://pyservice.pl-fe.cn/api'
+const baseURL = isDev ? '/api' : 'https://pyservice.pl-fe.cn/api'
 
 const request = axios.create({
   baseURL,
