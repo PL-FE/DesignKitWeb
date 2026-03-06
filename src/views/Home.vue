@@ -155,6 +155,14 @@ const tools = [
     route: '/video-editor',
     color: 'from-rose-500 to-pink-500',
   },
+  {
+    id: 'board-layout',
+    name: '展板排版 (导出 PSD)',
+    description: '上传多图智能排版，可导出带图层的 PSD 方便修改',
+    icon: 'solar:gallery-edit-bold-duotone',
+    route: '/board-layout',
+    color: 'from-emerald-500 to-teal-500',
+  },
 ]
 </script>
 

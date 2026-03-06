@@ -54,6 +54,12 @@ const router = createRouter({
       component: () => import('@/views/VideoEditor.vue'),
       meta: { title: '视频快速编辑 - DesignKit' },
     },
+    {
+      path: '/board-layout',
+      name: 'board-layout',
+      component: () => import('@/views/BoardLayout.vue'),
+      meta: { title: '展板排版生成 PSD - DesignKit' },
+    },
   ],
 })
 
