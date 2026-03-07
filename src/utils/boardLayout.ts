@@ -1,6 +1,7 @@
 export interface ImageSize {
   width: number
   height: number
+  ratio?: number
   [key: string]: any
 }
 
@@ -38,6 +39,12 @@ export interface SectionItem {
   bound?: LayoutBox // 区块自身的整体边界坐标(供外框/空白区展示使用)
   isOverflow: boolean // 计算结果是否高度溢出
   isOverflowX?: boolean // 计算结果是否宽度溢出
+
+  // 自定义网格配置
+  customGridCols?: number
+  customGridRows?: number
+  customColRatios?: number[]
+  customRowRatios?: number[]
 }
 
 export interface SectionRow {
@@ -559,6 +566,153 @@ function layoutGoldenRatio(
   return boxes
 }
 
+// 自由画廊 (横向) gallery_row
+function layoutGalleryRow(
+  imageSizes: ImageSize[],
+  w: number,
+  h: number,
+  gap: number
+): LayoutBox[] {
+  const numItems = imageSizes.length
+  if (numItems === 0) return []
+
+  const totalRatio = imageSizes.reduce(
+    (sum, img) => sum + Math.max(0.1, img.ratio || 1),
+    0
+  )
+  const allocatableW = Math.max(0, w - (numItems - 1) * gap)
+
+  let currentX = 0
+  const boxes: LayoutBox[] = []
+
+  for (let i = 0; i < numItems; i++) {
+    const itemRatio = Math.max(0.1, imageSizes[i]?.ratio || 1)
+    const itemW = (itemRatio / totalRatio) * allocatableW
+    boxes.push({
+      x: currentX,
+      y: 0,
+      w: itemW,
+      h: h,
+    })
+    currentX += itemW + gap
+  }
+  return boxes
+}
+
+// 自由画廊 (纵向) gallery_col
+function layoutGalleryCol(
+  imageSizes: ImageSize[],
+  w: number,
+  h: number,
+  gap: number
+): LayoutBox[] {
+  const numItems = imageSizes.length
+  if (numItems === 0) return []
+
+  const totalRatio = imageSizes.reduce(
+    (sum, img) => sum + Math.max(0.1, img.ratio || 1),
+    0
+  )
+  const allocatableH = Math.max(0, h - (numItems - 1) * gap)
+
+  let currentY = 0
+  const boxes: LayoutBox[] = []
+
+  for (let i = 0; i < numItems; i++) {
+    const itemRatio = Math.max(0.1, imageSizes[i]?.ratio || 1)
+    const itemH = (itemRatio / totalRatio) * allocatableH
+    boxes.push({
+      x: 0,
+      y: currentY,
+      w: w,
+      h: itemH,
+    })
+    currentY += itemH + gap
+  }
+  return boxes
+}
+
+// 自定义网格 custom_grid
+function layoutCustomGrid(
+  numItems: number,
+  w: number,
+  h: number,
+  gap: number,
+  gridCols?: number,
+  gridRows?: number,
+  colRatios?: number[],
+  rowRatios?: number[]
+): LayoutBox[] {
+  if (numItems === 0) return []
+
+  const cols = gridCols || 2
+  const rows = gridRows || 2
+
+  let validColRatios = colRatios || []
+  if (validColRatios.length !== cols) {
+    validColRatios = new Array(cols).fill(1)
+  }
+
+  let validRowRatios = rowRatios || []
+  if (validRowRatios.length !== rows) {
+    validRowRatios = new Array(rows).fill(1)
+  }
+
+  const totalColRatio = validColRatios.reduce(
+    (sum, r) => sum + Math.max(0.1, r || 1),
+    0
+  )
+  const totalRowRatio = validRowRatios.reduce(
+    (sum, r) => sum + Math.max(0.1, r || 1),
+    0
+  )
+
+  const allocatableW = Math.max(0, w - (cols - 1) * gap)
+  const allocatableH = Math.max(0, h - (rows - 1) * gap)
+
+  const colWidths = validColRatios.map(
+    (r) => (Math.max(0.1, r || 1) / totalColRatio) * allocatableW
+  )
+  const rowHeights = validRowRatios.map(
+    (r) => (Math.max(0.1, r || 1) / totalRowRatio) * allocatableH
+  )
+
+  const colXs: number[] = [0]
+  for (let c = 0; c < cols; c++) {
+    const prev = colXs[c] ?? 0
+    const wVal = colWidths[c] ?? 0
+    colXs.push(prev + wVal + gap)
+  }
+
+  const rowYs: number[] = [0]
+  for (let r = 0; r < rows; r++) {
+    const prev = rowYs[r] ?? 0
+    const hVal = rowHeights[r] ?? 0
+    rowYs.push(prev + hVal + gap)
+  }
+
+  const boxes: LayoutBox[] = []
+  const maxItems = Math.min(numItems, cols * rows)
+  for (let i = 0; i < maxItems; i++) {
+    const c = i % cols
+    const r = Math.floor(i / cols)
+    const boxX = colXs[c] !== undefined ? colXs[c] : 0
+    const boxY = rowYs[r] !== undefined ? rowYs[r] : 0
+    const boxW = colWidths[c] !== undefined ? colWidths[c] : allocatableW / cols
+    const boxH =
+      rowHeights[r] !== undefined ? rowHeights[r] : allocatableH / rows
+
+    boxes.push({
+      x: boxX,
+      y: boxY,
+      w: boxW,
+      h: boxH,
+    })
+  }
+
+  return boxes
+}
+
 /**
  * 二维高级固定尺寸排版计算 (按行/列划分)
  *
@@ -708,6 +862,7 @@ export function calculateAdvancedLayout(
         const sizes = sec.images.map((img) => ({
           width: img.width,
           height: img.height,
+          ratio: img.ratio,
         }))
 
         // 本地化的画框坐标
@@ -716,7 +871,11 @@ export function calculateAdvancedLayout(
           sizes,
           secW,
           imagesAvailH,
-          gap
+          gap,
+          sec.customGridCols,
+          sec.customGridRows,
+          sec.customColRatios,
+          sec.customRowRatios
         )
 
         // 统一偏移，合并到全局坐标系
@@ -774,7 +933,11 @@ function calculateBoxesCore(
   imageSizes: ImageSize[],
   w: number,
   h: number,
-  gap: number
+  gap: number,
+  customGridCols?: number,
+  customGridRows?: number,
+  customColRatios?: number[],
+  customRowRatios?: number[]
 ): LayoutBox[] {
   const numItems = imageSizes.length
   if (numItems === 0) return []
@@ -802,6 +965,24 @@ function calculateBoxesCore(
       break
     case 'equal_cols':
       boxes = layoutEqualCols(numItems, w, h, gap)
+      break
+    case 'gallery_row':
+      boxes = layoutGalleryRow(imageSizes, w, h, gap)
+      break
+    case 'gallery_col':
+      boxes = layoutGalleryCol(imageSizes, w, h, gap)
+      break
+    case 'custom_grid':
+      boxes = layoutCustomGrid(
+        numItems,
+        w,
+        h,
+        gap,
+        customGridCols,
+        customGridRows,
+        customColRatios,
+        customRowRatios
+      )
       break
     case 'masonry':
       boxes = layoutMasonry(imageSizes, w, h, gap)

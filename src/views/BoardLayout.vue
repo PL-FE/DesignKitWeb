@@ -110,11 +110,14 @@ const layouts = [
   { label: '底部大图', value: 'bottom_hero' },
   { label: '横向等分铺满', value: 'equal_rows' },
   { label: '纵向等分铺满', value: 'equal_cols' },
+  { label: '自由横排(可拖拉)', value: 'gallery_row' },
+  { label: '自由竖排(可拖拉)', value: 'gallery_col' },
   { label: '杂志风格', value: 'magazine' },
   { label: '中心大图', value: 'center_hero' },
   { label: '错落砖墙', value: 'span_grid' },
   { label: '交替网格', value: 'checkerboard' },
   { label: '黄金分割对折', value: 'golden_ratio' },
+  { label: '自定义网格', value: 'custom_grid' },
 ]
 
 // 读取图片的宽高
@@ -237,6 +240,7 @@ const handleFilesChange = async (
     url,
     width: size.width,
     height: size.height,
+    ratio: 1,
   })
 
   // 强制解构触发深度监听
@@ -358,20 +362,29 @@ const onDragEnter = (rowIdx: number, colIdx: number, imageIdx: number) => {
   const sec = row.sections[colIdx]
   if (!sec) return
 
-  if (
-    dragIndex.value.rowIdx === rowIdx &&
-    dragIndex.value.colIdx === colIdx &&
-    dragIndex.value.imageIdx !== -1 &&
-    dragIndex.value.imageIdx !== imageIdx
-  ) {
-    const images = sec.images
-    const temp = images[dragIndex.value.imageIdx]
-    if (temp) {
-      images[dragIndex.value.imageIdx] = images[imageIdx]
-      images[imageIdx] = temp
+  if (dragIndex.value.imageIdx !== -1) {
+    if (
+      dragIndex.value.rowIdx === rowIdx &&
+      dragIndex.value.colIdx === colIdx &&
+      dragIndex.value.imageIdx === imageIdx
+    ) {
+      return
+    }
+
+    const sourceRow = rows.value[dragIndex.value.rowIdx]
+    if (!sourceRow) return
+    const sourceSec = sourceRow.sections[dragIndex.value.colIdx]
+    if (!sourceSec) return
+    const origItem = sourceSec.images[dragIndex.value.imageIdx]
+    if (origItem) {
+      sourceSec.images.splice(dragIndex.value.imageIdx, 1)
+      sec.images.splice(imageIdx, 0, origItem)
+
+      dragIndex.value.rowIdx = rowIdx
+      dragIndex.value.colIdx = colIdx
       dragIndex.value.imageIdx = imageIdx
 
-      // 触发界面更新
+      // 触发界面重排
       rows.value = [...rows.value]
     }
   }
@@ -468,6 +481,164 @@ const handleColMouseup = () => {
   isResizing.value = false
   document.removeEventListener('mousemove', handleColMousemove)
   document.removeEventListener('mouseup', handleColMouseup)
+}
+
+// 可视化拖拽调整图片 (gallery_row / gallery_col)
+const isResizingImage = ref(false)
+const resizeImgData = ref({
+  startX: 0,
+  startY: 0,
+  startRatio0: 1,
+  startRatio1: 1,
+  rowIdx: -1,
+  colIdx: -1,
+  imageIdx: -1,
+  totalRatio: 1,
+  type: 'row' as 'row' | 'col',
+})
+
+const startResizeImage = (
+  e: MouseEvent,
+  rIdx: number,
+  cIdx: number,
+  imageIdx: number,
+  type: 'row' | 'col'
+) => {
+  e.preventDefault()
+  e.stopPropagation()
+
+  const sec = rows.value[rIdx]?.sections[cIdx]
+  if (!sec) return
+
+  let startRatio0 = 1
+  let startRatio1 = 1
+  let totalRatio = 1
+
+  if (sec.layout === 'custom_grid') {
+    const cols = sec.customGridCols || 2
+    const rowsGrid = sec.customGridRows || 2
+    if (!sec.customColRatios) sec.customColRatios = new Array(cols).fill(1)
+    if (!sec.customRowRatios) sec.customRowRatios = new Array(rowsGrid).fill(1)
+
+    if (type === 'row') {
+      const colI = imageIdx % cols
+      if (colI >= cols - 1) return
+      startRatio0 = sec.customColRatios[colI] || 1
+      startRatio1 = sec.customColRatios[colI + 1] || 1
+      totalRatio = sec.customColRatios.reduce((s, r) => s + Math.max(0.1, r), 0)
+    } else {
+      const rowI = Math.floor(imageIdx / cols)
+      if (rowI >= rowsGrid - 1) return
+      startRatio0 = sec.customRowRatios[rowI] || 1
+      startRatio1 = sec.customRowRatios[rowI + 1] || 1
+      totalRatio = sec.customRowRatios.reduce((s, r) => s + Math.max(0.1, r), 0)
+    }
+  } else {
+    if (imageIdx >= sec.images.length - 1) return
+    const imgL = sec.images[imageIdx]
+    const imgR = sec.images[imageIdx + 1]
+    if (!imgL || !imgR) return
+    startRatio0 = imgL.ratio || 1
+    startRatio1 = imgR.ratio || 1
+    totalRatio = sec.images.reduce(
+      (sum: number, img: any) => sum + Math.max(0.1, img.ratio || 1),
+      0
+    )
+  }
+
+  isResizingImage.value = true
+  resizeImgData.value = {
+    startX: e.clientX,
+    startY: e.clientY,
+    startRatio0,
+    startRatio1,
+    rowIdx: rIdx,
+    colIdx: cIdx,
+    imageIdx: imageIdx,
+    totalRatio,
+    type,
+  }
+
+  document.addEventListener('mousemove', handleImgMousemove)
+  document.addEventListener('mouseup', handleImgMouseup)
+}
+
+const handleImgMousemove = (e: MouseEvent) => {
+  if (!isResizingImage.value) return
+  const {
+    startX,
+    startY,
+    startRatio0,
+    startRatio1,
+    rowIdx,
+    colIdx,
+    imageIdx,
+    totalRatio,
+    type,
+  } = resizeImgData.value
+
+  const sec = rows.value[rowIdx]?.sections[colIdx]
+  if (sec) {
+    let ratioDelta = 0
+    if (type === 'row') {
+      const dx = e.clientX - startX
+      const secW = sec.bound
+        ? sec.bound.w
+        : previewContainer.value?.clientWidth || 800
+      ratioDelta = (dx / (secW * scaleRatio.value)) * totalRatio
+    } else {
+      const dy = e.clientY - startY
+      const secH = sec.bound
+        ? sec.bound.h
+        : (previewContainer.value?.clientWidth || 800) *
+          (pixelHeight.value / pixelWidth.value)
+      ratioDelta = (dy / (secH * scaleRatio.value)) * totalRatio
+    }
+
+    let newRatioL = startRatio0 + ratioDelta
+    let newRatioR = startRatio1 - ratioDelta
+
+    if (newRatioL < 0.1) {
+      newRatioR -= 0.1 - newRatioL
+      newRatioL = 0.1
+    }
+    if (newRatioR < 0.1) {
+      newRatioL -= 0.1 - newRatioR
+      newRatioR = 0.1
+    }
+
+    if (sec.layout === 'custom_grid') {
+      const cols = sec.customGridCols || 2
+      if (type === 'row') {
+        const colI = imageIdx % cols
+        if (sec.customColRatios) {
+          sec.customColRatios[colI] = Math.max(0.1, newRatioL)
+          sec.customColRatios[colI + 1] = Math.max(0.1, newRatioR)
+        }
+      } else {
+        const rowI = Math.floor(imageIdx / cols)
+        if (sec.customRowRatios) {
+          sec.customRowRatios[rowI] = Math.max(0.1, newRatioL)
+          sec.customRowRatios[rowI + 1] = Math.max(0.1, newRatioR)
+        }
+      }
+    } else {
+      const imgL = sec.images[imageIdx]
+      const imgR = sec.images[imageIdx + 1]
+      if (imgL && imgR) {
+        imgL.ratio = Math.max(0.1, newRatioL)
+        imgR.ratio = Math.max(0.1, newRatioR)
+      }
+    }
+
+    updateLayout()
+  }
+}
+
+const handleImgMouseup = () => {
+  isResizingImage.value = false
+  document.removeEventListener('mousemove', handleImgMousemove)
+  document.removeEventListener('mouseup', handleImgMouseup)
 }
 
 // 用于在相对容器中缩放预览画板适配屏幕
@@ -1040,6 +1211,66 @@ onUnmounted(() => {
                           />
                         </div>
 
+                        <!-- Gallery Row 或 Custom Grid 水平调整手柄 (调整宽度) -->
+                        <div
+                          v-if="
+                            (section.layout === 'gallery_row' ||
+                              section.layout === 'custom_grid') &&
+                            (section.layout === 'custom_grid'
+                              ? iIdx % (section.customGridCols || 2) <
+                                (section.customGridCols || 2) - 1
+                              : iIdx < section.images.length - 1)
+                          "
+                          class="absolute top-0 bottom-0 cursor-col-resize flex flex-col items-center justify-center transition-colors pointer-events-auto hover:bg-emerald-500/30"
+                          :style="{
+                            right: `${-form.gap / 2 - 7 / scaleRatio}px`,
+                            width: `${14 / scaleRatio}px`,
+                            zIndex: 99,
+                          }"
+                          @mousedown.stop.prevent="
+                            startResizeImage($event, rIdx, cIdx, iIdx, 'row')
+                          "
+                        >
+                          <div
+                            class="bg-emerald-400 rounded-full opacity-0 hover:opacity-100 transition-opacity pointer-events-none shadow-sm"
+                            :style="{
+                              width: `${6 / scaleRatio}px`,
+                              height: `${32 / scaleRatio}px`,
+                            }"
+                          ></div>
+                        </div>
+
+                        <!-- Gallery Col 或 Custom Grid 垂直调整手柄 (调整高度) -->
+                        <div
+                          v-if="
+                            (section.layout === 'gallery_col' ||
+                              section.layout === 'custom_grid') &&
+                            (section.layout === 'custom_grid'
+                              ? Math.floor(
+                                  iIdx / (section.customGridCols || 2)
+                                ) <
+                                (section.customGridRows || 2) - 1
+                              : iIdx < section.images.length - 1)
+                          "
+                          class="absolute left-0 right-0 cursor-row-resize flex flex-row items-center justify-center transition-colors pointer-events-auto hover:bg-emerald-500/30"
+                          :style="{
+                            bottom: `${-form.gap / 2 - 7 / scaleRatio}px`,
+                            height: `${14 / scaleRatio}px`,
+                            zIndex: 99,
+                          }"
+                          @mousedown.stop.prevent="
+                            startResizeImage($event, rIdx, cIdx, iIdx, 'col')
+                          "
+                        >
+                          <div
+                            class="bg-emerald-400 rounded-full opacity-0 hover:opacity-100 transition-opacity pointer-events-none shadow-sm"
+                            :style="{
+                              height: `${6 / scaleRatio}px`,
+                              width: `${32 / scaleRatio}px`,
+                            }"
+                          ></div>
+                        </div>
+
                         <!-- 删除对应图片按钮 -->
                         <button
                           v-show="selectedSectionId === section.id"
@@ -1154,6 +1385,47 @@ onUnmounted(() => {
                       />
                     </div>
                   </el-form-item>
+
+                  <!-- 只有当选择自定义网格时，才显示行列数量输入 -->
+                  <div
+                    v-if="section.layout === 'custom_grid'"
+                    class="flex gap-4 w-full"
+                  >
+                    <el-form-item label="自定义列数 (Cols)" class="flex-1">
+                      <el-input-number
+                        v-model="section.customGridCols"
+                        :min="1"
+                        :max="20"
+                        :step="1"
+                        class="w-full! border-none"
+                        :controls="true"
+                        @change="
+                          () => {
+                            section.customColRatios = new Array(
+                              section.customGridCols || 2
+                            ).fill(1)
+                          }
+                        "
+                      />
+                    </el-form-item>
+                    <el-form-item label="自定义行数 (Rows)" class="flex-1">
+                      <el-input-number
+                        v-model="section.customGridRows"
+                        :min="1"
+                        :max="20"
+                        :step="1"
+                        class="w-full! border-none"
+                        :controls="true"
+                        @change="
+                          () => {
+                            section.customRowRatios = new Array(
+                              section.customGridRows || 2
+                            ).fill(1)
+                          }
+                        "
+                      />
+                    </el-form-item>
+                  </div>
                   <div class="flex gap-4 w-full">
                     <el-form-item label="区块宽度配比" class="flex-1">
                       <el-input-number

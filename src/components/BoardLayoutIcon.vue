@@ -207,4 +207,41 @@ defineProps<{
       style="right: 0; bottom: 0; width: 15%; height: 35%"
     ></div>
   </div>
+
+  <div
+    class="w-full h-full flex"
+    style="gap: 4%"
+    v-else-if="layout === 'gallery_row'"
+  >
+    <div class="bg-current rounded-[2px] opacity-80" style="flex: 2"></div>
+    <div class="bg-current rounded-[2px] opacity-80" style="flex: 3"></div>
+    <div class="bg-current rounded-[2px] opacity-80" style="flex: 1"></div>
+    <div class="bg-current rounded-[2px] opacity-80" style="flex: 2"></div>
+  </div>
+
+  <div
+    class="w-full h-full flex flex-col"
+    style="gap: 4%"
+    v-else-if="layout === 'gallery_col'"
+  >
+    <div class="bg-current rounded-[2px] opacity-80" style="flex: 2"></div>
+    <div class="bg-current rounded-[2px] opacity-80" style="flex: 3"></div>
+    <div class="bg-current rounded-[2px] opacity-80" style="flex: 1"></div>
+    <div class="bg-current rounded-[2px] opacity-80" style="flex: 2"></div>
+  </div>
+
+  <div
+    class="w-full h-full flex flex-col"
+    style="gap: 4%"
+    v-else-if="layout === 'custom_grid'"
+  >
+    <div class="flex" style="flex: 2; gap: 4%">
+      <div class="bg-current rounded-[2px] opacity-80" style="flex: 2"></div>
+      <div class="bg-current rounded-[2px] opacity-80" style="flex: 1"></div>
+    </div>
+    <div class="flex" style="flex: 2; gap: 4%">
+      <div class="bg-current rounded-[2px] opacity-80" style="flex: 1.5"></div>
+      <div class="bg-current rounded-[2px] opacity-80" style="flex: 2"></div>
+    </div>
+  </div>
 </template>
