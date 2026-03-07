@@ -2,10 +2,11 @@
 import { Icon } from '@iconify/vue'
 import type { UploadProps, UploadRawFile } from 'element-plus'
 import { ElMessage } from 'element-plus'
+import AudioFileCard from './AudioFileCard.vue'
 
 const props = withDefaults(
   defineProps<{
-    modelValue: File | null
+    modelValue: File | File[] | null
     /** 空状态大图标 */
     emptyIcon: string
     /** 空状态主提示文字 */
@@ -14,6 +15,8 @@ const props = withDefaults(
     hint?: string
     /** el-upload accept 属性 */
     accept?: string
+    /** 是否支持多选 */
+    multiple?: boolean
     /** 最大文件大小（MB），默认 2000 */
     maxSizeMb?: number
     /** 自定义额外校验函数，返回 true 通过，返回 string 则为错误信息 */
@@ -26,6 +29,7 @@ const props = withDefaults(
     compact?: boolean
   }>(),
   {
+    multiple: false,
     maxSizeMb: 2000,
     selectedIcon: 'solar:video-library-bold-duotone',
     minHeight: 'min-h-[300px]',
@@ -34,16 +38,39 @@ const props = withDefaults(
 )
 
 const emit = defineEmits<{
-  'update:modelValue': [file: File | null]
+  'update:modelValue': [file: File | File[] | null]
 }>()
 
-const handleChange: UploadProps['onChange'] = (uploadFile) => {
+import { computed } from 'vue'
+const isEmpty = computed(() => {
+  if (!props.modelValue) return true
+  if (Array.isArray(props.modelValue)) return props.modelValue.length === 0
+  return false
+})
+
+const getAudioDuration = (file: File): Promise<string> => {
+  return new Promise((resolve) => {
+    const audio = new Audio()
+    audio.src = URL.createObjectURL(file)
+    audio.onloadedmetadata = () => {
+      URL.revokeObjectURL(audio.src)
+      const minutes = Math.floor(audio.duration / 60)
+      const seconds = Math.floor(audio.duration % 60)
+      resolve(`${minutes}:${seconds.toString().padStart(2, '0')}`)
+    }
+    audio.onerror = () => resolve('未知')
+  })
+}
+
+const processingQueue = ref<File[]>([])
+let processingTimer: number | null = null
+
+const handleChange: UploadProps['onChange'] = async (uploadFile) => {
   if (!uploadFile.raw) return
 
   // 大小校验
   if (uploadFile.size && uploadFile.size > props.maxSizeMb * 1024 * 1024) {
     ElMessage.warning(`文件过大，请控制在 ${props.maxSizeMb}MB 以内`)
-    emit('update:modelValue', null)
     return
   }
 
@@ -52,12 +79,31 @@ const handleChange: UploadProps['onChange'] = (uploadFile) => {
     const result = props.onValidate(uploadFile.raw)
     if (result !== true) {
       if (typeof result === 'string') ElMessage.warning(result)
-      emit('update:modelValue', null)
       return
     }
   }
 
-  emit('update:modelValue', uploadFile.raw)
+  // 获取时长并注入 raw 对象
+  const duration = await getAudioDuration(uploadFile.raw)
+  ;(uploadFile.raw as any).durationText = duration
+
+  if (props.multiple) {
+    // 关键修复：批量选择时 on-change 会并行触发。
+    // 使用缓冲队列并在处理完毕后通过 emit 一次性更新，避免竞态导致的状态覆盖。
+    processingQueue.value.push(uploadFile.raw)
+
+    if (processingTimer) window.clearTimeout(processingTimer)
+    processingTimer = window.setTimeout(() => {
+      const currentFiles = Array.isArray(props.modelValue)
+        ? [...props.modelValue]
+        : []
+      emit('update:modelValue', [...currentFiles, ...processingQueue.value])
+      processingQueue.value = []
+      processingTimer = null
+    }, 100)
+  } else {
+    emit('update:modelValue', uploadFile.raw)
+  }
 }
 
 const handleRemove = () => {
@@ -78,11 +124,12 @@ const handleRemove = () => {
       :auto-upload="false"
       :show-file-list="false"
       :accept="accept"
+      :multiple="multiple"
       :on-change="handleChange"
     >
       <!-- 空状态 -->
       <div
-        v-if="!modelValue"
+        v-if="isEmpty"
         class="el-upload__text flex flex-col items-center px-4"
         :class="compact ? 'py-6' : 'py-12 md:py-20'"
       >
@@ -110,49 +157,52 @@ const handleRemove = () => {
       <div v-else class="w-full h-full relative">
         <slot name="selected" :file="modelValue" :remove="handleRemove">
           <!-- 默认已选展示（横向布局，适用于大多数模块） -->
+          <!-- 默认已选展示（横向布局，单选模式） -->
           <div
-            class="flex flex-col sm:flex-row items-center sm:items-start gap-4 p-6 md:p-8 w-full h-full z-10 text-left cursor-default"
+            v-if="!multiple && !Array.isArray(modelValue) && modelValue"
+            class="p-6 md:p-8"
           >
-            <div
-              class="w-20 h-20 rounded-xl flex items-center justify-center text-4xl shadow-sm border flex-shrink-0"
-              style="
-                background: var(--page-accent-light);
-                color: var(--page-accent);
-                border-color: var(--page-accent-border);
+            <AudioFileCard
+              :file="(modelValue as File)"
+              :icon="selectedIcon"
+              @remove="handleRemove"
+            />
+          </div>
+
+          <!-- 多文件简单列表展示 -->
+          <div
+            v-else
+            class="flex flex-col gap-3 p-4 w-full h-full z-10 overflow-y-auto max-h-[400px]"
+          >
+            <AudioFileCard
+              v-for="(f, idx) in Array.isArray(modelValue)
+                ? modelValue
+                : [modelValue]"
+              :key="idx"
+              :file="(f as File)"
+              :icon="selectedIcon"
+              @remove="
+                () => {
+                  if (Array.isArray(modelValue)) {
+                    const newFiles = [...modelValue]
+                    newFiles.splice(idx, 1)
+                    emit('update:modelValue', newFiles)
+                  } else {
+                    emit('update:modelValue', null)
+                  }
+                }
               "
-            >
-              <Icon :icon="selectedIcon" />
-            </div>
-            <div
-              class="flex-1 min-w-0 flex flex-col justify-center w-full mt-2 sm:mt-0"
-            >
-              <p
-                class="font-bold text-slate-800 text-lg truncate w-full"
-                :title="modelValue.name"
+            />
+            <div class="text-center pt-2">
+              <el-button
+                type="primary"
+                link
+                size="small"
+                @click.stop="handleRemove"
               >
-                {{ modelValue.name }}
-              </p>
-              <div class="flex items-center gap-2 mt-2">
-                <el-tag
-                  size="small"
-                  type="primary"
-                  effect="plain"
-                  class="!font-bold"
-                >
-                  {{ (modelValue.size / 1024 / 1024).toFixed(2) }} MB
-                </el-tag>
-              </div>
+                清空全部重新上传
+              </el-button>
             </div>
-            <el-button
-              type="danger"
-              circle
-              plain
-              size="small"
-              class="absolute top-2 right-2 sm:static mt-2 sm:mt-0"
-              @click.stop="handleRemove"
-            >
-              <Icon icon="solar:trash-bin-trash-bold" />
-            </el-button>
           </div>
         </slot>
       </div>

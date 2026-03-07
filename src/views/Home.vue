@@ -163,6 +163,22 @@ const tools = [
     route: '/board-layout',
     color: 'from-emerald-500 to-teal-500',
   },
+  {
+    id: 'audio-vocal-removal',
+    name: '人声去除 / 伴奏提取',
+    description: '基于 AI 模型，一键分离人声与伴奏，提取纯净伴奏',
+    icon: 'solar:music-note-bold-duotone',
+    route: '/audio-vocal-removal',
+    color: 'from-violet-500 to-purple-500',
+  },
+  {
+    id: 'audio-merge',
+    name: '音乐合并',
+    description: '支持多段音频拼接，可自由调整顺序，导出高质量 MP3',
+    icon: 'solar:link-bold-duotone',
+    route: '/audio-merge',
+    color: 'from-blue-500 to-cyan-500',
+  },
 ]
 </script>
 
