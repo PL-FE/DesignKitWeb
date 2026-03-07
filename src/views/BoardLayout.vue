@@ -111,6 +111,10 @@ const layouts = [
   { label: '横向等分铺满', value: 'equal_rows' },
   { label: '纵向等分铺满', value: 'equal_cols' },
   { label: '杂志风格', value: 'magazine' },
+  { label: '中心大图', value: 'center_hero' },
+  { label: '错落砖墙', value: 'span_grid' },
+  { label: '交替网格', value: 'checkerboard' },
+  { label: '黄金分割对折', value: 'golden_ratio' },
 ]
 
 // 读取图片的宽高

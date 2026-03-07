@@ -125,4 +125,86 @@ defineProps<{
     <div class="bg-current rounded-[2px] opacity-80"></div>
     <div class="bg-current rounded-[2px] opacity-80"></div>
   </div>
+
+  <div class="w-full h-full relative" v-else-if="layout === 'center_hero'">
+    <!-- Center big item -->
+    <div
+      class="absolute bg-current rounded-[2px] opacity-80"
+      style="left: 20%; top: 20%; width: 60%; height: 60%"
+    ></div>
+    <!-- Borders -->
+    <div
+      class="absolute bg-current rounded-[2px] opacity-80"
+      style="left: 0; top: 0; width: 100%; height: 16%"
+    ></div>
+    <div
+      class="absolute bg-current rounded-[2px] opacity-80"
+      style="left: 0; bottom: 0; width: 100%; height: 16%"
+    ></div>
+    <div
+      class="absolute bg-current rounded-[2px] opacity-80"
+      style="left: 0; top: 20%; width: 16%; height: 60%"
+    ></div>
+    <div
+      class="absolute bg-current rounded-[2px] opacity-80"
+      style="right: 0; top: 20%; width: 16%; height: 60%"
+    ></div>
+  </div>
+
+  <div
+    class="w-full h-full grid grid-cols-3 grid-rows-3"
+    style="gap: 4%"
+    v-else-if="layout === 'span_grid'"
+  >
+    <div
+      class="bg-current rounded-[2px] col-span-2 row-span-2 opacity-80"
+    ></div>
+    <div class="bg-current rounded-[2px] opacity-80"></div>
+    <div class="bg-current rounded-[2px] opacity-80"></div>
+    <div class="bg-current rounded-[2px] opacity-80"></div>
+    <div class="bg-current rounded-[2px] opacity-80"></div>
+    <div class="bg-current rounded-[2px] opacity-80"></div>
+  </div>
+
+  <div
+    class="w-full h-full flex flex-col"
+    style="gap: 6%"
+    v-else-if="layout === 'checkerboard'"
+  >
+    <div class="flex-1 flex" style="gap: 6%">
+      <div class="bg-current rounded-[2px] opacity-80 w-[60%]"></div>
+      <div class="bg-current rounded-[2px] opacity-80 w-[40%]"></div>
+    </div>
+    <div class="flex-1 flex" style="gap: 6%">
+      <div class="bg-current rounded-[2px] opacity-80 w-[40%]"></div>
+      <div class="bg-current rounded-[2px] opacity-80 w-[60%]"></div>
+    </div>
+    <div class="flex-1 flex" style="gap: 6%">
+      <div class="bg-current rounded-[2px] opacity-80 w-[30%]"></div>
+      <div class="bg-current rounded-[2px] opacity-80 w-[30%]"></div>
+      <div class="bg-current rounded-[2px] opacity-80 w-[40%]"></div>
+    </div>
+  </div>
+
+  <div class="w-full h-full relative" v-else-if="layout === 'golden_ratio'">
+    <!-- right vertical split -->
+    <div
+      class="absolute bg-current rounded-[2px] opacity-80"
+      style="left: 0; top: 0; width: 61%; height: 100%"
+    ></div>
+    <!-- right top horizontal split -->
+    <div
+      class="absolute bg-current rounded-[2px] opacity-80"
+      style="right: 0; top: 0; width: 35%; height: 61%"
+    ></div>
+    <!-- right bottom splits -->
+    <div
+      class="absolute bg-current rounded-[2px] opacity-80"
+      style="right: 19%; bottom: 0; width: 16%; height: 35%"
+    ></div>
+    <div
+      class="absolute bg-current rounded-[2px] opacity-80"
+      style="right: 0; bottom: 0; width: 15%; height: 35%"
+    ></div>
+  </div>
 </template>

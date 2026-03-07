@@ -323,6 +323,242 @@ function layoutMasonry(
   return boxesWithCol.map((b) => ({ x: b.x, y: b.y, w: b.w, h: b.h }))
 }
 
+// 中心大图 center_hero
+function layoutCenterHero(
+  numItems: number,
+  w: number,
+  h: number,
+  gap: number
+): LayoutBox[] {
+  if (numItems === 0) return []
+  if (numItems <= 4) return layoutGrid(numItems, w, h, gap)
+
+  const heroW = (w - gap * 2) * 0.5
+  const heroH = (h - gap * 2) * 0.5
+  const sideW = (w - heroW - gap * 2) / 2
+  const sideH = (h - heroH - gap * 2) / 2
+
+  const boxes: LayoutBox[] = []
+  // Center hero
+  boxes.push({ x: sideW + gap, y: sideH + gap, w: heroW, h: heroH })
+
+  // Distribute remaining
+  const remItems = numItems - 1
+  const topCount = Math.ceil(remItems / 4)
+  const bottomCount = Math.ceil((remItems - topCount) / 3)
+  const leftCount = Math.ceil((remItems - topCount - bottomCount) / 2)
+  const rightCount = remItems - topCount - bottomCount - leftCount
+
+  // Top
+  if (topCount > 0) {
+    boxes.push(
+      ...layoutGrid(topCount, w, sideH, gap).map((b) => ({
+        ...b,
+        x: b.x,
+        y: 0,
+      }))
+    )
+  }
+  // Bottom
+  if (bottomCount > 0) {
+    boxes.push(
+      ...layoutGrid(bottomCount, w, sideH, gap).map((b) => ({
+        ...b,
+        x: b.x,
+        y: h - sideH,
+      }))
+    )
+  }
+  // Left
+  if (leftCount > 0) {
+    boxes.push(
+      ...layoutGrid(leftCount, sideW, heroH, gap).map((b) => ({
+        ...b,
+        x: 0,
+        y: sideH + gap,
+      }))
+    )
+  }
+  // Right
+  if (rightCount > 0) {
+    boxes.push(
+      ...layoutGrid(rightCount, sideW, heroH, gap).map((b) => ({
+        ...b,
+        x: w - sideW,
+        y: sideH + gap,
+      }))
+    )
+  }
+
+  return boxes
+}
+
+// 错落砖墙 span_grid
+function layoutSpanGrid(
+  numItems: number,
+  w: number,
+  h: number,
+  gap: number
+): LayoutBox[] {
+  if (numItems === 0) return []
+  if (numItems <= 2) return layoutGrid(numItems, w, h, gap)
+
+  const boxes: LayoutBox[] = []
+  if (numItems === 3) {
+    const halfW = (w - gap) / 2
+    const halfH = (h - gap) / 2
+    boxes.push({ x: 0, y: 0, w: halfW, h: h })
+    boxes.push({ x: halfW + gap, y: 0, w: halfW, h: halfH })
+    boxes.push({ x: halfW + gap, y: halfH + gap, w: halfW, h: halfH })
+  } else if (numItems === 4) {
+    const thirdW = (w - gap * 2) / 3
+    const halfH = (h - gap) / 2
+    boxes.push({ x: 0, y: 0, w: thirdW * 2 + gap, h: halfH })
+    boxes.push({ x: thirdW * 2 + gap * 2, y: 0, w: thirdW, h: halfH })
+    boxes.push({ x: 0, y: halfH + gap, w: thirdW, h: halfH })
+    boxes.push({
+      x: thirdW + gap,
+      y: halfH + gap,
+      w: thirdW * 2 + gap,
+      h: halfH,
+    })
+  } else {
+    // pattern for 5+ items
+    const thirdW = (w - gap * 2) / 3
+    const thirdH = (h - gap * 2) / 3
+    boxes.push({ x: 0, y: 0, w: thirdW * 2 + gap, h: thirdH * 2 + gap }) // big
+    boxes.push({ x: thirdW * 2 + gap * 2, y: 0, w: thirdW, h: thirdH })
+    boxes.push({
+      x: thirdW * 2 + gap * 2,
+      y: thirdH + gap,
+      w: thirdW,
+      h: thirdH,
+    })
+
+    // Bottom row
+    const bottomRem = numItems - 3
+    const bottomGrid = layoutGrid(bottomRem, w, thirdH, gap)
+    boxes.push(
+      ...bottomGrid.map((b) => ({ ...b, x: b.x, y: thirdH * 2 + gap * 2 }))
+    )
+  }
+
+  return boxes
+}
+
+// 交替布局 checkerboard
+function layoutCheckerboard(
+  numItems: number,
+  w: number,
+  h: number,
+  gap: number
+): LayoutBox[] {
+  if (numItems === 0) return []
+
+  const rows = Math.ceil(numItems / 3)
+  const rowH = (h - (rows - 1) * gap) / rows
+  const boxes: LayoutBox[] = []
+
+  let currentImg = 0
+  for (let r = 0; r < rows; r++) {
+    const y = r * (rowH + gap)
+    const itemsInRow = Math.min(3, numItems - currentImg)
+
+    if (itemsInRow === 1) {
+      boxes.push({ x: 0, y, w, h: rowH })
+      currentImg++
+    } else if (itemsInRow === 2) {
+      const w1 = (w - gap) * (r % 2 === 0 ? 0.6 : 0.4)
+      const w2 = w - gap - w1
+      boxes.push({ x: 0, y, w: w1, h: rowH })
+      boxes.push({ x: w1 + gap, y, w: w2, h: rowH })
+      currentImg += 2
+    } else {
+      // 3 items
+      if (r % 2 === 0) {
+        // large, small, small
+        const lW = (w - gap * 2) * 0.5
+        const sW = (w - lW - gap * 2) / 2
+        boxes.push({ x: 0, y, w: lW, h: rowH })
+        boxes.push({ x: lW + gap, y, w: sW, h: rowH })
+        boxes.push({ x: lW + sW + gap * 2, y, w: sW, h: rowH })
+      } else {
+        // small, small, large
+        const lW = (w - gap * 2) * 0.5
+        const sW = (w - lW - gap * 2) / 2
+        boxes.push({ x: 0, y, w: sW, h: rowH })
+        boxes.push({ x: sW + gap, y, w: sW, h: rowH })
+        boxes.push({ x: sW * 2 + gap * 2, y, w: lW, h: rowH })
+      }
+      currentImg += 3
+    }
+  }
+  return boxes
+}
+
+// 黄金比例对折 golden_ratio
+function layoutGoldenRatio(
+  numItems: number,
+  w: number,
+  h: number,
+  gap: number
+): LayoutBox[] {
+  if (numItems === 0) return []
+  if (numItems === 1) return layoutGrid(1, w, h, gap)
+
+  const boxes: LayoutBox[] = []
+  let currentX = 0
+  let currentY = 0
+  let currentW = w
+  let currentH = h
+  let dir = 0 // 0: right, 1: bottom, 2: left, 3: top
+
+  for (let i = 0; i < numItems; i++) {
+    if (i === numItems - 1) {
+      // Last item takes remaining space
+      boxes.push({ x: currentX, y: currentY, w: currentW, h: currentH })
+      break
+    }
+
+    const ratio = 0.618
+    if (dir === 0) {
+      // Split vertically, put on left
+      const nextW = (currentW - gap) * ratio
+      boxes.push({ x: currentX, y: currentY, w: nextW, h: currentH })
+      currentX += nextW + gap
+      currentW = currentW - nextW - gap
+    } else if (dir === 1) {
+      // Split horizontally, put on top
+      const nextH = (currentH - gap) * ratio
+      boxes.push({ x: currentX, y: currentY, w: currentW, h: nextH })
+      currentY += nextH + gap
+      currentH = currentH - nextH - gap
+    } else if (dir === 2) {
+      // Split vertically, put on right
+      const nextW = (currentW - gap) * ratio
+      boxes.push({
+        x: currentX + currentW - nextW,
+        y: currentY,
+        w: nextW,
+        h: currentH,
+      })
+      currentW = currentW - nextW - gap
+    } else if (dir === 3) {
+      // Split horizontally, put on bottom
+      const nextH = (currentH - gap) * ratio
+      boxes.push({
+        x: currentX,
+        y: currentY + currentH - nextH,
+        w: currentW,
+        h: nextH,
+      })
+      currentH = currentH - nextH - gap
+    }
+    dir = (dir + 1) % 4
+  }
+  return boxes
+}
+
 /**
  * 二维高级固定尺寸排版计算 (按行/列划分)
  *
@@ -572,6 +808,18 @@ function calculateBoxesCore(
       break
     case 'nine_grid':
       boxes = layoutNineGrid(numItems, w, h, gap)
+      break
+    case 'center_hero':
+      boxes = layoutCenterHero(numItems, w, h, gap)
+      break
+    case 'span_grid':
+      boxes = layoutSpanGrid(numItems, w, h, gap)
+      break
+    case 'checkerboard':
+      boxes = layoutCheckerboard(numItems, w, h, gap)
+      break
+    case 'golden_ratio':
+      boxes = layoutGoldenRatio(numItems, w, h, gap)
       break
     case 'grid':
     default:
