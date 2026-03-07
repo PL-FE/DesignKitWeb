@@ -28,10 +28,35 @@ const dragIndex = ref(-1)
 const form = ref({
   width: 1920,
   height: 1080,
+  unit: 'px',
   layout: 'masonry',
   gap: 20,
+  padding: 0,
+  radius: 0,
   bgColor: '#FFFFFF',
-  dpi: 300,
+  dpi: 150,
+})
+
+const pixelWidth = computed(() => {
+  if (form.value.unit === 'px') return form.value.width
+  if (form.value.unit === 'in')
+    return Math.round(form.value.width * form.value.dpi)
+  if (form.value.unit === 'cm')
+    return Math.round((form.value.width * form.value.dpi) / 2.54)
+  if (form.value.unit === 'mm')
+    return Math.round((form.value.width * form.value.dpi) / 25.4)
+  return form.value.width
+})
+
+const pixelHeight = computed(() => {
+  if (form.value.unit === 'px') return form.value.height
+  if (form.value.unit === 'in')
+    return Math.round(form.value.height * form.value.dpi)
+  if (form.value.unit === 'cm')
+    return Math.round((form.value.height * form.value.dpi) / 2.54)
+  if (form.value.unit === 'mm')
+    return Math.round((form.value.height * form.value.dpi) / 25.4)
+  return form.value.height
 })
 
 const layouts = [
@@ -39,7 +64,9 @@ const layouts = [
   { label: '等分网格', value: 'grid' },
   { label: '三宫格/九宫格', value: 'nine_grid' },
   { label: '左侧大图', value: 'left_hero' },
+  { label: '右侧大图', value: 'right_hero' },
   { label: '顶部大图', value: 'top_hero' },
+  { label: '底部大图', value: 'bottom_hero' },
   { label: '杂志风格', value: 'magazine' },
 ]
 
@@ -95,9 +122,10 @@ const updateLayout = () => {
   layoutBoxes.value = calculateBoxes(
     form.value.layout,
     localImages.value,
-    form.value.width,
-    form.value.height,
-    form.value.gap
+    pixelWidth.value,
+    pixelHeight.value,
+    form.value.gap,
+    form.value.padding
   )
 }
 
@@ -195,8 +223,8 @@ watch(
 const scaleRatio = computed(() => {
   if (containerWidth.value <= 0 || containerHeight.value <= 0) return 1
 
-  const ratioW = containerWidth.value / form.value.width
-  const ratioH = containerHeight.value / form.value.height
+  const ratioW = containerWidth.value / pixelWidth.value
+  const ratioH = containerHeight.value / pixelHeight.value
 
   // 选择最小的一个比例，确保宽和高都不超出容器
   return Math.min(ratioW, ratioH, 1) // 不放大，只缩小
@@ -223,8 +251,8 @@ const handleExport = async () => {
     })
     formData.append('layout_data', layoutData)
 
-    formData.append('width', form.value.width.toString())
-    formData.append('height', form.value.height.toString())
+    formData.append('width', pixelWidth.value.toString())
+    formData.append('height', pixelHeight.value.toString())
     formData.append('bg_color', form.value.bgColor)
     formData.append('dpi', form.value.dpi.toString())
 
@@ -247,7 +275,8 @@ const handleExport = async () => {
   }
 }
 
-const setDimensions = (w: number, h: number) => {
+const setDimensions = (w: number, h: number, unit: string = 'px') => {
+  form.value.unit = unit
   form.value.width = w
   form.value.height = h
 }
@@ -341,8 +370,8 @@ onUnmounted(() => {
               <div
                 class="absolute origin-center transition-transform duration-300 shadow-sm"
                 :style="{
-                  width: `${form.width}px`,
-                  height: `${form.height}px`,
+                  width: `${pixelWidth}px`,
+                  height: `${pixelHeight}px`,
                   backgroundColor: form.bgColor,
                   transform: `scale(${scaleRatio})`,
                 }"
@@ -398,6 +427,7 @@ onUnmounted(() => {
                     <!-- 将 overflow-hidden 移入内部单独包裹 img，避免裁切组内的删除按钮 -->
                     <div
                       class="absolute inset-0 overflow-hidden shadow-sm transition-shadow group-hover:shadow-md"
+                      :style="{ borderRadius: form.radius + 'px' }"
                     >
                       <img
                         :src="item.url"
@@ -464,12 +494,12 @@ onUnmounted(() => {
           </el-form-item>
 
           <!-- 画板尺寸 -->
-          <el-form-item label="画板尺寸 (宽 x 高 px)">
+          <el-form-item label="画板尺寸 (宽 x 高)">
             <div class="flex items-center gap-2 w-full">
               <el-input-number
                 v-model="form.width"
-                :min="100"
-                :step="100"
+                :min="1"
+                :step="form.unit === 'px' ? 100 : 10"
                 class="!w-full"
                 :controls="false"
                 placeholder="宽"
@@ -477,42 +507,70 @@ onUnmounted(() => {
               <span class="text-slate-400 text-sm">x</span>
               <el-input-number
                 v-model="form.height"
-                :min="100"
-                :step="100"
+                :min="1"
+                :step="form.unit === 'px' ? 100 : 10"
                 class="!w-full"
                 :controls="false"
                 placeholder="高"
               />
+              <el-select v-model="form.unit" class="w-24">
+                <el-option label="px" value="px" />
+                <el-option label="mm" value="mm" />
+                <el-option label="cm" value="cm" />
+                <el-option label="in" value="in" />
+              </el-select>
             </div>
             <div class="flex gap-2 mt-2 w-full">
               <el-tag
                 size="small"
                 class="cursor-pointer"
                 @click="setDimensions(1920, 1080)"
-                >1920x1080 (16:9)</el-tag
+                >1920x1080 (px)</el-tag
               >
               <el-tag
                 size="small"
                 class="cursor-pointer"
                 @click="setDimensions(1080, 1920)"
-                >1080x1920 (9:16)</el-tag
+                >1080x1920 (px)</el-tag
               >
               <el-tag
                 size="small"
                 class="cursor-pointer"
-                @click="setDimensions(2480, 3508)"
+                @click="setDimensions(210, 297, 'mm')"
                 >A4 版面</el-tag
               >
             </div>
           </el-form-item>
 
+          <!-- 四周留白 -->
+          <el-form-item label="四周留白 (Padding px)">
+            <el-slider
+              v-model="form.padding"
+              :min="0"
+              :max="300"
+              :step="5"
+              class="px-2"
+            />
+          </el-form-item>
+
           <!-- 间距 -->
-          <el-form-item label="图片间距">
+          <el-form-item label="图片间距 (px)">
             <el-slider
               v-model="form.gap"
               :min="0"
-              :max="100"
+              :max="300"
               :step="5"
+              class="px-2"
+            />
+          </el-form-item>
+
+          <!-- 图片圆角 (仅限预览) -->
+          <el-form-item label="图片圆角 (仅预览视觉px)">
+            <el-slider
+              v-model="form.radius"
+              :min="0"
+              :max="200"
+              :step="2"
               class="px-2"
             />
           </el-form-item>

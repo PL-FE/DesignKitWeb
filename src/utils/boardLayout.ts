@@ -111,6 +111,24 @@ function layoutLeftHero(
   return [...boxes, ...remBoxes]
 }
 
+// 右侧大图 right_hero
+function layoutRightHero(
+  numItems: number,
+  w: number,
+  h: number,
+  gap: number
+): LayoutBox[] {
+  if (numItems === 0) return []
+  if (numItems === 1) return layoutGrid(1, w, h, gap)
+
+  const heroW = (w - gap) * 0.5
+
+  const remBoxes = layoutGrid(numItems - 1, w - heroW - gap, h, gap)
+
+  const boxes: LayoutBox[] = [{ x: w - heroW, y: 0, w: heroW, h }]
+  return [...remBoxes, ...boxes]
+}
+
 // 顶部大图 top_hero
 function layoutTopHero(
   numItems: number,
@@ -129,6 +147,24 @@ function layoutTopHero(
     b.y += heroH + gap
   }
   return [...boxes, ...remBoxes]
+}
+
+// 底部大图 bottom_hero
+function layoutBottomHero(
+  numItems: number,
+  w: number,
+  h: number,
+  gap: number
+): LayoutBox[] {
+  if (numItems === 0) return []
+  if (numItems === 1) return layoutGrid(1, w, h, gap)
+
+  const heroH = (h - gap) * 0.5
+
+  const remBoxes = layoutGrid(numItems - 1, w, h - heroH - gap, gap)
+
+  const boxes: LayoutBox[] = [{ x: 0, y: h - heroH, w, h: heroH }]
+  return [...remBoxes, ...boxes]
 }
 
 // 杂志风格 magazine
@@ -218,11 +254,12 @@ function layoutMasonry(
  * 统一计算入口
  * 计算指定模式下的所有图片坐标和尺寸
  *
- * @param mode 布局模式 masonry, grid, nine_grid, left_hero, top_hero, magazine
+ * @param mode 布局模式 masonry, grid, nine_grid, left_hero, right_hero, top_hero, bottom_hero, magazine
  * @param imageSizes 图片对象数组，至少包含 width, height
  * @param canvasW 画布总宽
  * @param canvasH 画布总高
  * @param gap 间距
+ * @param padding 四周留白
  * @returns LayoutBox[] 包含每个框的 x, y, w, h
  */
 export function calculateBoxes(
@@ -230,13 +267,15 @@ export function calculateBoxes(
   imageSizes: ImageSize[],
   canvasW: number,
   canvasH: number,
-  gap: number
+  gap: number,
+  padding: number = 0
 ): LayoutBox[] {
   const numItems = imageSizes.length
   if (numItems === 0) return []
 
-  const w = Math.max(1, canvasW - 2 * gap)
-  const h = Math.max(1, canvasH - 2 * gap)
+  // 真正的可用宽高取决于 padding
+  const w = Math.max(1, canvasW - 2 * padding)
+  const h = Math.max(1, canvasH - 2 * padding)
 
   let boxes: LayoutBox[] = []
 
@@ -244,8 +283,14 @@ export function calculateBoxes(
     case 'left_hero':
       boxes = layoutLeftHero(numItems, w, h, gap)
       break
+    case 'right_hero':
+      boxes = layoutRightHero(numItems, w, h, gap)
+      break
     case 'top_hero':
       boxes = layoutTopHero(numItems, w, h, gap)
+      break
+    case 'bottom_hero':
+      boxes = layoutBottomHero(numItems, w, h, gap)
       break
     case 'magazine':
       boxes = layoutMagazine(numItems, w, h, gap)
@@ -262,10 +307,10 @@ export function calculateBoxes(
       break
   }
 
-  // 加上外部 gap 边距作为画布内保留距离
+  // 加上外部 padding 边距作为画布内保留距离
   for (const b of boxes) {
-    b.x += gap
-    b.y += gap
+    b.x += padding
+    b.y += padding
   }
 
   return boxes

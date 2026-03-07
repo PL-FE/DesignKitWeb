@@ -56,6 +56,18 @@ defineProps<{
   </div>
 
   <div
+    class="w-full h-full grid grid-cols-3"
+    style="gap: 6%"
+    v-else-if="layout === 'right_hero'"
+  >
+    <div class="flex flex-col h-full" style="gap: 6%">
+      <div class="bg-current rounded-[3px] flex-1 opacity-80"></div>
+      <div class="bg-current rounded-[3px] flex-1 opacity-80"></div>
+    </div>
+    <div class="bg-current rounded-[3px] col-span-2 h-full opacity-80"></div>
+  </div>
+
+  <div
     class="w-full h-full flex flex-col"
     style="gap: 6%"
     v-else-if="layout === 'top_hero'"
@@ -66,6 +78,19 @@ defineProps<{
       <div class="bg-current rounded-[3px] flex-1 opacity-80"></div>
       <div class="bg-current rounded-[3px] flex-1 opacity-80"></div>
     </div>
+  </div>
+
+  <div
+    class="w-full h-full flex flex-col"
+    style="gap: 6%"
+    v-else-if="layout === 'bottom_hero'"
+  >
+    <div class="flex flex-1" style="gap: 6%">
+      <div class="bg-current rounded-[3px] flex-1 opacity-80"></div>
+      <div class="bg-current rounded-[3px] flex-1 opacity-80"></div>
+      <div class="bg-current rounded-[3px] flex-1 opacity-80"></div>
+    </div>
+    <div class="bg-current rounded-[3px] h-[55%] opacity-80"></div>
   </div>
 
   <div
