@@ -44,6 +44,9 @@ withDefaults(
       :gradient="gradient"
     />
 
+    <!-- 全局横向插入槽 -->
+    <slot name="top-panel" />
+
     <!-- 左右双栏布局 -->
     <el-row :gutter="24">
       <!-- 左侧：上传区 -->

@@ -1,13 +1,18 @@
 <script setup lang="ts">
-import { ref, computed, watch, onUnmounted } from 'vue'
+import { ref, computed, watch, onUnmounted, onMounted, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Icon } from '@iconify/vue'
-import type { UploadFile, UploadFiles } from 'element-plus'
+import type { UploadFile } from 'element-plus'
 import ToolPageLayout from '@/components/ToolPageLayout.vue'
 import BoardLayoutSelector from '@/components/BoardLayoutSelector.vue'
 import { exportBoard } from '@/api/board'
-import { calculateBoxes } from '@/utils/boardLayout'
-import type { LayoutBox } from '@/utils/boardLayout'
+import { calculateAdvancedLayout } from '@/utils/boardLayout'
+import type {
+  LayoutBox,
+  SectionItem,
+  SectionRow,
+  TextItem,
+} from '@/utils/boardLayout'
 
 const isExporting = ref(false)
 
@@ -21,21 +26,57 @@ interface LocalImage {
   box?: LayoutBox
 }
 
-const localImages = ref<LocalImage[]>([])
-const layoutBoxes = ref<LayoutBox[]>([])
-const dragIndex = ref(-1)
-
+// 整个应用的配置
 const form = ref({
   width: 1920,
-  height: 1080,
+  height: 2500, // 默认固定高度
   unit: 'px',
-  layout: 'masonry',
   gap: 20,
-  padding: 0,
+  padding: 60,
   radius: 0,
   bgColor: '#FFFFFF',
   dpi: 150,
 })
+
+// 大标题配置
+const mainTitle = ref({
+  text: '',
+  fontSize: 120,
+  color: '#333333',
+  align: 'center' as 'left' | 'center' | 'right',
+  weight: 'bold',
+})
+
+// 默认自带一个初始区块
+const defaultSection = (): SectionItem => ({
+  id: 'sec_' + Date.now() + Math.random().toString(36).slice(2, 6),
+  title: '',
+  titleFontSize: 60,
+  titleColor: '#666666',
+  titleAlign: 'left',
+  layout: 'masonry',
+  heightRatio: 1,
+  widthRatio: 1,
+  images: [],
+  boxes: [],
+  isOverflow: false,
+})
+
+// 区块列表定义 (二维数据结构 Rows > Sections)
+const rows = ref<SectionRow[]>([
+  {
+    id: 'row_' + Date.now(),
+    sections: [defaultSection()],
+  },
+])
+
+// 选中的特定区块
+const selectedSectionId = ref<string | null>(null)
+
+// 计算后的产物
+const previewTexts = ref<TextItem[]>([])
+const globalOverflow = ref(false)
+const globalOverflowX = ref(false)
 
 const pixelWidth = computed(() => {
   if (form.value.unit === 'px') return form.value.width
@@ -67,6 +108,8 @@ const layouts = [
   { label: '右侧大图', value: 'right_hero' },
   { label: '顶部大图', value: 'top_hero' },
   { label: '底部大图', value: 'bottom_hero' },
+  { label: '横向等分铺满', value: 'equal_rows' },
+  { label: '纵向等分铺满', value: 'equal_cols' },
   { label: '杂志风格', value: 'magazine' },
 ]
 
@@ -86,10 +129,91 @@ const getImageSize = (
   })
 }
 
-// 处理上传：由于我们要自定义拖拽网格，不再使用 el-upload 的默认列表，改成自定义管理
+// 添加入特定的 section 区块（默认在最下方加一行）
+const addSectionRow = () => {
+  const newSec = defaultSection()
+  rows.value.push({
+    id: 'row_' + Date.now(),
+    sections: [newSec],
+  })
+  selectedSectionId.value = newSec.id
+  updateLayout()
+}
+
+// 移除某个行列的区块
+const removeSection = (rIdx: number, cIdx: number) => {
+  if (rows.value.length === 1 && rows.value[0].sections.length === 1) {
+    ElMessage.warning('至少需要保留一个区块')
+    return
+  }
+
+  const row = rows.value[rIdx]
+  if (!row) return
+  const sec = row.sections[cIdx]
+  if (!sec) return
+
+  sec.images.forEach((item: any) => {
+    if (item.url) URL.revokeObjectURL(item.url)
+  })
+  row.sections.splice(cIdx, 1)
+
+  // 如果这一行空了，则删掉这一行
+  if (row.sections.length === 0) {
+    rows.value.splice(rIdx, 1)
+  }
+
+  // 如果当前删掉的正是选中的，则置空
+  if (selectedSectionId.value === sec.id) {
+    selectedSectionId.value = null
+  }
+
+  updateLayout()
+}
+
+// 插入操作集合
+const insertColBefore = (rIdx: number, cIdx: number) => {
+  const row = rows.value[rIdx]
+  if (!row) return
+  const newSec = { ...defaultSection(), id: 'sec_' + Date.now() }
+  row.sections.splice(cIdx, 0, newSec)
+  selectedSectionId.value = newSec.id
+  updateLayout()
+}
+
+const insertColAfter = (rIdx: number, cIdx: number) => {
+  const row = rows.value[rIdx]
+  if (!row) return
+  const newSec = { ...defaultSection(), id: 'sec_' + Date.now() }
+  row.sections.splice(cIdx + 1, 0, newSec)
+  selectedSectionId.value = newSec.id
+  updateLayout()
+}
+
+const insertRowBefore = (rIdx: number) => {
+  const newSec = { ...defaultSection(), id: 'sec_' + Date.now() }
+  rows.value.splice(rIdx, 0, {
+    id: 'row_' + Date.now(),
+    sections: [newSec],
+  })
+  selectedSectionId.value = newSec.id
+  updateLayout()
+}
+
+const insertRowAfter = (rIdx: number) => {
+  const newSec = { ...defaultSection(), id: 'sec_' + Date.now() }
+  rows.value.splice(rIdx + 1, 0, {
+    id: 'row_' + Date.now(),
+    sections: [newSec],
+  })
+  selectedSectionId.value = newSec.id
+  updateLayout()
+}
+
+// 处理上传：指定属于哪个 row, 哪 cols
 const handleFilesChange = async (
-  uploadFile: UploadFile,
-  uploadFiles: UploadFiles
+  rIdx: number,
+  cIdx: number,
+  uploadFile: UploadFile
 ) => {
   if (!uploadFile.raw) return
 
@@ -97,7 +221,13 @@ const handleFilesChange = async (
   const url = URL.createObjectURL(file)
   const size = await getImageSize(url)
 
-  localImages.value.push({
+  const row = rows.value[rIdx]
+  if (!row) return
+  const sec = row.sections[cIdx]
+  if (!sec) return
+
+  // Trigger Vue reactivity explicitly on array
+  sec.images.push({
     id: uploadFile.uid + '_' + Date.now(),
     file,
     url,
@@ -105,42 +235,87 @@ const handleFilesChange = async (
     height: size.height,
   })
 
+  // 强制解构触发深度监听
+  rows.value = [...rows.value]
   updateLayout()
 }
 
-const handleRemove = (index: number) => {
-  const item = localImages.value[index]
+const handleRemove = (rIdx: number, cIdx: number, imageIdx: number) => {
+  const row = rows.value[rIdx]
+  if (!row) return
+  const sec = row.sections[cIdx]
+  if (!sec) return
+
+  const item = sec.images[imageIdx]
   if (item && item.url) {
     URL.revokeObjectURL(item.url)
   }
-  localImages.value.splice(index, 1)
+  sec.images.splice(imageIdx, 1)
+
+  // 触发刷新
+  rows.value = [...rows.value]
   updateLayout()
 }
 
+let _isUpdatingLayout = false
 // 核心排版触发函数
 const updateLayout = () => {
-  layoutBoxes.value = calculateBoxes(
-    form.value.layout,
-    localImages.value,
-    pixelWidth.value,
-    pixelHeight.value,
-    form.value.gap,
-    form.value.padding
-  )
+  if (_isUpdatingLayout) return
+
+  try {
+    _isUpdatingLayout = true
+    const result = calculateAdvancedLayout(
+      rows.value,
+      mainTitle.value,
+      pixelWidth.value,
+      pixelHeight.value,
+      form.value.gap,
+      form.value.padding
+    )
+
+    // 更新引用状态
+    previewTexts.value = result.texts
+    globalOverflow.value = result.globalOverflow
+    globalOverflowX.value = result.globalOverflowX || false
+
+    // Vue Reactivity 强刷
+    rows.value = [...result.rows]
+  } catch (err: any) {
+    console.error('Layout Calculation Error:', err)
+    ElMessage.error('排版计算出错：' + err.message)
+  } finally {
+    nextTick(() => {
+      _isUpdatingLayout = false
+    })
+  }
 }
 
 // 监听参数变化，自动更新布局
 watch(
-  form,
+  [form, mainTitle, rows],
   () => {
     updateLayout()
   },
-  { deep: true }
+  { deep: true, flush: 'post' }
 )
 
-// 拖拽互换逻辑
-const onDragStart = (index: number, event: DragEvent) => {
-  dragIndex.value = index
+onMounted(() => {
+  if (rows.value[0]?.sections[0]) {
+    selectedSectionId.value = rows.value[0].sections[0].id
+  }
+  updateLayout()
+})
+
+// 拖拽互换逻辑 (后续更新为行内/列内拖拽)
+const dragIndex = ref({ rowIdx: -1, colIdx: -1, imageIdx: -1 })
+
+const onDragStart = (
+  rowIdx: number,
+  colIdx: number,
+  imageIdx: number,
+  event: DragEvent
+) => {
+  dragIndex.value = { rowIdx, colIdx, imageIdx }
   if (event.dataTransfer) {
     event.dataTransfer.effectAllowed = 'move'
 
@@ -173,21 +348,122 @@ const onDragStart = (index: number, event: DragEvent) => {
   }
 }
 
-const onDragEnter = (index: number) => {
-  if (dragIndex.value !== -1 && dragIndex.value !== index) {
-    // 交换数组元素位置
-    const temp = localImages.value[dragIndex.value]
-    localImages.value[dragIndex.value] = localImages.value[index]
-    localImages.value[index] = temp
-    dragIndex.value = index
-    // 注意：这里不用再调用 updateLayout() 重新计算所有坐标，
-    // 因为 Vue <transition-group> 依靠 :key 绑定。坐标和 Box 是按 index 给到 DOM 上的，
-    // 元素本身在数组里的 index 变了，所以它的 box.x 等于直接变成了新位置的。
+const onDragEnter = (rowIdx: number, colIdx: number, imageIdx: number) => {
+  const row = rows.value[rowIdx]
+  if (!row) return
+  const sec = row.sections[colIdx]
+  if (!sec) return
+
+  if (
+    dragIndex.value.rowIdx === rowIdx &&
+    dragIndex.value.colIdx === colIdx &&
+    dragIndex.value.imageIdx !== -1 &&
+    dragIndex.value.imageIdx !== imageIdx
+  ) {
+    const images = sec.images
+    const temp = images[dragIndex.value.imageIdx]
+    if (temp) {
+      images[dragIndex.value.imageIdx] = images[imageIdx]
+      images[imageIdx] = temp
+      dragIndex.value.imageIdx = imageIdx
+
+      // 触发界面更新
+      rows.value = [...rows.value]
+    }
   }
 }
 
 const onDragEnd = () => {
-  dragIndex.value = -1
+  dragIndex.value = { rowIdx: -1, colIdx: -1, imageIdx: -1 }
+}
+
+// 可视化拖拽调整列宽
+const isResizing = ref(false)
+const resizeData = ref({
+  startX: 0,
+  startWidthRatio0: 1,
+  startWidthRatio1: 1,
+  rowIdx: -1,
+  colIdx: -1,
+  totalColsRatio: 1,
+})
+
+const startResizeColumn = (e: MouseEvent, rIdx: number, cIdx: number) => {
+  e.preventDefault()
+  e.stopPropagation()
+
+  const row = rows.value[rIdx]
+  if (!row || cIdx >= row.sections.length - 1) return
+
+  const secL = row.sections[cIdx]
+  const secR = row.sections[cIdx + 1]
+  if (!secL || !secR) return
+
+  isResizing.value = true
+  resizeData.value = {
+    startX: e.clientX,
+    startWidthRatio0: secL.widthRatio || 1,
+    startWidthRatio1: secR.widthRatio || 1,
+    rowIdx: rIdx,
+    colIdx: cIdx,
+    totalColsRatio: row.sections.reduce(
+      (sum, s) => sum + Math.max(0.1, s.widthRatio || 1),
+      0
+    ),
+  }
+
+  document.addEventListener('mousemove', handleColMousemove)
+  document.addEventListener('mouseup', handleColMouseup)
+}
+
+const handleColMousemove = (e: MouseEvent) => {
+  if (!isResizing.value) return
+  const {
+    startX,
+    startWidthRatio0,
+    startWidthRatio1,
+    rowIdx,
+    colIdx,
+    totalColsRatio,
+  } = resizeData.value
+
+  const dx = e.clientX - startX
+  // 近似计算 dx 对应的 ratio 变化 (基于画布大致宽度)
+  const previewW = previewContainer.value?.clientWidth || 800
+  const ratioDelta = (dx / previewW) * totalColsRatio
+
+  const row = rows.value[rowIdx]
+  if (row) {
+    const secL = row.sections[colIdx]
+    const secR = row.sections[colIdx + 1]
+    if (!secL || !secR) return
+
+    // 限制单列最小 ratio 为 0.1
+    let newRatioL = startWidthRatio0 + ratioDelta
+    let newRatioR = startWidthRatio1 - ratioDelta
+
+    if (newRatioL < 0.1) {
+      newRatioR -= 0.1 - newRatioL
+      newRatioL = 0.1
+    }
+    if (newRatioR < 0.1) {
+      newRatioL -= 0.1 - newRatioR
+      newRatioR = 0.1
+    }
+
+    // 更新宽度占比
+    secL.widthRatio = Math.max(0.1, newRatioL)
+    secR.widthRatio = Math.max(0.1, newRatioR)
+
+    // 即时触发排版更新
+    updateLayout()
+  }
+}
+
+const handleColMouseup = () => {
+  isResizing.value = false
+  document.removeEventListener('mousemove', handleColMousemove)
+  document.removeEventListener('mouseup', handleColMouseup)
 }
 
 // 用于在相对容器中缩放预览画板适配屏幕
@@ -195,7 +471,6 @@ const previewContainer = ref<HTMLElement | null>(null)
 
 // 动态获取容器宽度，保证自适应计算 scale
 const containerWidth = ref(800)
-const containerHeight = ref(600)
 
 let resizeObserver: ResizeObserver | null = null
 
@@ -209,9 +484,8 @@ watch(
     if (newVal) {
       resizeObserver = new ResizeObserver((entries) => {
         for (let entry of entries) {
-          // 留出一定的边距进行缩放 (左右各留 40px padding)
+          // 只关心宽度，留出边距进行缩放 (左右各留 40px padding)
           containerWidth.value = entry.contentRect.width - 80
-          containerHeight.value = entry.contentRect.height - 80
         }
       })
       resizeObserver.observe(newVal)
@@ -221,18 +495,28 @@ watch(
 )
 
 const scaleRatio = computed(() => {
-  if (containerWidth.value <= 0 || containerHeight.value <= 0) return 1
+  if (containerWidth.value <= 0) return 1
 
-  const ratioW = containerWidth.value / pixelWidth.value
-  const ratioH = containerHeight.value / pixelHeight.value
+  // 左右给一点留白
+  const paddingVal = 20
+  const usableW = Math.max(10, containerWidth.value - paddingVal * 2)
 
-  // 选择最小的一个比例，确保宽和高都不超出容器
-  return Math.min(ratioW, ratioH, 1) // 不放大，只缩小
+  const ratioW = usableW / (pixelWidth.value || 1)
+
+  // 仅根据宽度放大或缩小，撑满容器宽度
+  return Math.max(0.01, ratioW)
 })
 
 const handleExport = async () => {
-  if (localImages.value.length === 0) {
-    ElMessage.warning('请先选择至少一张图片')
+  let imagesCount = 0
+  rows.value.forEach((r) => {
+    r.sections.forEach((s) => {
+      imagesCount += s.images.length
+    })
+  })
+
+  if (imagesCount === 0 && !mainTitle.value.text) {
+    ElMessage.warning('请至少输入标题或上传图片')
     return
   }
 
@@ -240,14 +524,30 @@ const handleExport = async () => {
   try {
     const formData = new FormData()
 
+    let imgIdx = 0
     // 1. 将按顺序的本地文件发过去
-    localImages.value.forEach((item) => {
-      formData.append('files', item.file)
+    rows.value.forEach((r) => {
+      r.sections.forEach((sec) => {
+        sec.images.forEach((item) => {
+          formData.append('files', item.file)
+        })
+      })
     })
 
-    // 2. 将最终的布局数据 JSON 传过去，方便后端不用动脑直接画
+    // 2. 将最终的布局数据 JSON 传过去
+    // 所有从各个 section baseBoxes 提炼出来的图片绝对坐标打平成一维数组给后端
+    const flatBoxes: LayoutBox[] = []
+    rows.value.forEach((r) => {
+      r.sections.forEach((sec) => {
+        if (sec.boxes) {
+          flatBoxes.push(...sec.boxes)
+        }
+      })
+    })
+
     const layoutData = JSON.stringify({
-      boxes: layoutBoxes.value, // 包含 [{x, y, w, h}, ...]
+      texts: previewTexts.value,
+      boxes: flatBoxes,
     })
     formData.append('layout_data', layoutData)
 
@@ -282,7 +582,11 @@ const setDimensions = (w: number, h: number, unit: string = 'px') => {
 }
 
 onUnmounted(() => {
-  localImages.value.forEach((item) => URL.revokeObjectURL(item.url))
+  rows.value.forEach((r) => {
+    r.sections.forEach((sec) => {
+      sec.images.forEach((item: any) => URL.revokeObjectURL(item.url))
+    })
+  })
 })
 </script>
 
@@ -295,164 +599,499 @@ onUnmounted(() => {
     :leftSpan="16"
     :rightSpan="8"
   >
+    <!-- 顶部：全局设置 -->
+    <template #top-panel>
+      <el-card
+        shadow="hover"
+        class="border-slate-200 rounded-2xl mb-6 custom-card"
+      >
+        <div
+          class="flex items-center gap-2 font-bold text-slate-800 w-full mb-4"
+        >
+          <Icon
+            icon="solar:settings-bold-duotone"
+            class="text-emerald-500 text-lg"
+          />
+          全局海报设置
+        </div>
+
+        <el-form
+          :inline="true"
+          size="default"
+          class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-x-4 gap-y-4 items-end"
+        >
+          <el-form-item label="海报大标题" class="!mb-0 col-span-2">
+            <div class="flex gap-2 w-full">
+              <el-input
+                v-model="mainTitle.text"
+                placeholder="主标题(可选)"
+                class="flex-1"
+              />
+              <el-input-number
+                v-model="mainTitle.fontSize"
+                :min="12"
+                :max="800"
+                :step="10"
+                placeholder="字号"
+                class="w-[60px]! shrink-0"
+                :controls="false"
+              />
+            </div>
+          </el-form-item>
+
+          <el-form-item label="画版尺寸" class="!mb-0 col-span-2">
+            <div class="flex items-center gap-2 w-full">
+              <el-input-number
+                v-model="form.width"
+                :min="1"
+                :step="form.unit === 'px' ? 100 : 10"
+                class="flex-1"
+                :controls="false"
+                placeholder="宽"
+              />
+              <el-button
+                circle
+                size="small"
+                @click="
+                  () => {
+                    const t = form.width
+                    form.width = form.height
+                    form.height = t
+                  }
+                "
+                title="宽高对调"
+                ><Icon icon="solar:transfer-horizontal-bold"
+              /></el-button>
+              <el-input-number
+                v-model="form.height"
+                :min="1"
+                :step="form.unit === 'px' ? 100 : 10"
+                class="flex-1"
+                :controls="false"
+                placeholder="高"
+              />
+              <el-select v-model="form.unit" class="w-[60px]! shrink-0">
+                <el-option label="px" value="px" /><el-option
+                  label="mm"
+                  value="mm"
+                /><el-option label="cm" value="cm" /><el-option
+                  label="in"
+                  value="in"
+                />
+              </el-select>
+            </div>
+          </el-form-item>
+
+          <el-form-item label="快捷尺寸" class="!mb-0 col-span-2">
+            <div class="flex gap-2 w-full">
+              <el-tag
+                size="default"
+                class="cursor-pointer flex-1 text-center"
+                @click="setDimensions(1920, 2500, 'px')"
+                >长海报</el-tag
+              >
+              <el-tag
+                size="default"
+                class="cursor-pointer flex-1 text-center"
+                @click="setDimensions(1080, 1920, 'px')"
+                >壁纸</el-tag
+              >
+              <el-tag
+                size="default"
+                class="cursor-pointer flex-1 text-center"
+                @click="setDimensions(210, 297, 'mm')"
+                >A4</el-tag
+              >
+            </div>
+          </el-form-item>
+
+          <el-form-item label="留白" class="!mb-0">
+            <el-input-number
+              v-model="form.padding"
+              :min="0"
+              :max="500"
+              :step="10"
+              class="w-full"
+              :controls="false"
+            />
+          </el-form-item>
+
+          <el-form-item label="间距" class="!mb-0">
+            <el-input-number
+              v-model="form.gap"
+              :min="0"
+              :max="300"
+              :step="5"
+              class="w-full"
+              :controls="false"
+            />
+          </el-form-item>
+
+          <el-form-item label="背景色" class="!mb-0">
+            <el-color-picker
+              v-model="form.bgColor"
+              :predefine="[
+                '#FFFFFF',
+                '#000000',
+                '#F3F4F6',
+                '#EF4444',
+                '#3B82F6',
+                '#10B981',
+              ]"
+              class="w-full"
+            />
+          </el-form-item>
+
+          <el-form-item label="DPI" class="!mb-0">
+            <el-input-number
+              v-model="form.dpi"
+              :min="72"
+              :max="600"
+              :step="72"
+              class="w-full"
+              :controls="false"
+            />
+          </el-form-item>
+
+          <div
+            class="col-span-1 md:col-span-3 lg:col-span-4 xl:col-span-2 flex justify-end items-end h-[32px]"
+          >
+            <el-button
+              type="primary"
+              class="!rounded-xl !font-bold shadow-lg shadow-emerald-500/30 w-full"
+              :loading="isExporting"
+              @click="handleExport"
+            >
+              <Icon
+                icon="solar:download-minimalistic-bold-duotone"
+                class="mr-2 text-xl"
+                v-if="!isExporting"
+              />导出 PSD
+            </el-button>
+          </div>
+        </el-form>
+      </el-card>
+    </template>
     <!-- 左侧：上传区与预览区 -->
     <template #upload>
       <div class="flex flex-col gap-6">
-        <!-- 上传卡片 -->
-        <el-card
-          shadow="hover"
-          class="border-slate-200 rounded-2xl custom-card overflow-visible"
-        >
-          <template #header>
-            <div class="flex justify-between items-center">
-              <div class="flex items-center gap-2 font-bold text-slate-800">
-                <Icon
-                  icon="solar:folder-with-files-bold-duotone"
-                  class="text-emerald-500 text-lg"
-                />
-                添加图片
-              </div>
-              <el-tag
-                size="small"
-                type="info"
-                effect="plain"
-                class="rounded-lg"
-              >
-                已选 {{ localImages.length }} 张
-              </el-tag>
-            </div>
-          </template>
-
-          <el-upload
-            class="w-full board-uploader"
-            drag
-            multiple
-            :show-file-list="false"
-            :auto-upload="false"
-            :on-change="handleFilesChange"
-            accept=".jpg,.jpeg,.png,.webp,.bmp"
-          >
-            <div
-              class="flex flex-col items-center justify-center p-6 text-slate-400"
-            >
-              <Icon
-                icon="solar:upload-bold-duotone"
-                class="text-5xl text-emerald-400 mb-3"
-              />
-              <div class="el-upload__text font-medium text-slate-600">
-                拖拽多张图片到此处，或 <em>点击继续上传</em>
-              </div>
-            </div>
-          </el-upload>
-        </el-card>
-
-        <!-- 预览结果卡片 -->
         <el-card
           shadow="hover"
           class="border-slate-200 rounded-2xl custom-card flex-1 min-h-[500px]"
         >
           <template #header>
-            <div class="flex items-center gap-2 font-bold text-slate-800">
-              <Icon
-                icon="solar:eye-bold-duotone"
-                class="text-emerald-500 text-lg"
-              />
-              交互式排版预览 (随意拖拽互换位置)
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2 font-bold text-slate-800">
+                <Icon
+                  icon="solar:eye-bold-duotone"
+                  class="text-emerald-500 text-lg"
+                />
+                可视化展板画布 (所见即所得)
+              </div>
+              <el-button
+                size="small"
+                type="primary"
+                plain
+                @click="addSectionRow"
+              >
+                <Icon icon="solar:add-circle-bold" class="mr-1" />
+                新增空白行
+              </el-button>
             </div>
           </template>
 
           <div
             ref="previewContainer"
-            class="box-border w-full h-[600px] flex items-center justify-center bg-slate-50 rounded-xl border border-dashed border-slate-300 overflow-hidden relative"
+            class="box-border w-full flex items-center justify-center bg-slate-50/80 rounded-xl border border-dashed border-slate-300 overflow-hidden relative transition-all duration-300"
+            @click.self="selectedSectionId = null"
+            :style="{
+              height: `${Math.round(pixelHeight * scaleRatio) + 40}px`,
+            }"
           >
-            <template v-if="localImages.length > 0">
+            <template v-if="rows.length > 0 || previewTexts.length > 0">
               <!-- 根据计算出的 scale 缩小真画布 -->
               <div
-                class="absolute origin-center transition-transform duration-300 shadow-sm"
+                class="absolute transition-transform duration-300 shadow-sm"
+                :class="[
+                  globalOverflow
+                    ? 'border-b-4 border-dashed border-red-500'
+                    : '',
+                  globalOverflowX
+                    ? 'border-r-4 border-dashed border-red-500'
+                    : '',
+                ]"
                 :style="{
                   width: `${pixelWidth}px`,
                   height: `${pixelHeight}px`,
                   backgroundColor: form.bgColor,
-                  transform: `scale(${scaleRatio})`,
+                  left: '50%',
+                  top: '50%',
+                  transform: `translate(-50%, -50%) scale(${scaleRatio})`,
                 }"
               >
-                <!-- 静态网格序号层 (基于容器定位，固定不动且不被裁切) -->
-                <div class="absolute inset-0 z-20 pointer-events-none">
-                  <div
-                    v-for="(box, index) in layoutBoxes"
-                    :key="'slot-' + index"
-                    class="absolute"
-                    :style="{
-                      left: box.x + 'px',
-                      top: box.y + 'px',
-                      width: box.w + 'px',
-                      height: box.h + 'px',
-                    }"
-                  >
-                    <!-- 将角标序号放大，适应外层缩放，并加上更深的背景 -->
-                    <div
-                      class="absolute top-4 left-4 min-w-[48px] h-[48px] flex items-center justify-center bg-slate-900/85 text-white rounded-xl text-xl font-bold backdrop-blur-md shadow-lg border border-white/20"
-                    >
-                      {{ index + 1 }}
-                    </div>
+                <div
+                  v-if="globalOverflow || globalOverflowX"
+                  class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-red-600/30 to-transparent h-32 flex flex-col items-center justify-end pb-4 text-red-700 font-bold z-50 pointer-events-none"
+                >
+                  <div class="flex items-center" v-if="globalOverflow">
+                    <Icon
+                      icon="solar:danger-triangle-bold"
+                      class="mr-2 text-xl"
+                    />
+                    总内容已超出预设高度
+                  </div>
+                  <div class="flex items-center mt-1" v-if="globalOverflowX">
+                    <Icon
+                      icon="solar:danger-triangle-bold"
+                      class="mr-2 text-xl"
+                    />
+                    内容严重超出画板宽度，请重新设置间距或区块宽度
                   </div>
                 </div>
 
-                <!-- 拖放排列层 (图元层) -->
-                <transition-group
-                  name="grid-move"
-                  tag="div"
-                  class="w-full h-full relative z-10"
-                >
+                <!-- 文本渲染层 -->
+                <div class="absolute inset-0 z-20 pointer-events-none">
                   <div
-                    v-for="(item, index) in localImages"
-                    :key="item.id"
-                    class="absolute cursor-move group hover:z-30"
-                    draggable="true"
-                    @dragstart="onDragStart(index, $event)"
-                    @dragenter="onDragEnter(index)"
-                    @dragover.prevent
-                    @dragend="onDragEnd"
+                    v-for="(tItem, tIdx) in previewTexts"
+                    :key="'txt-' + tIdx"
+                    class="absolute flex flex-col justify-center"
+                    :style="{
+                      left: tItem.x + 'px',
+                      top: tItem.y + 'px',
+                      width: tItem.w + 'px',
+                      height: tItem.h + 'px',
+                      fontSize: tItem.fontSize + 'px',
+                      color: tItem.color,
+                      fontWeight: tItem.weight,
+                      textAlign: tItem.align as any,
+                      lineHeight: 1.2
+                    }"
+                  >
+                    {{ tItem.text }}
+                  </div>
+                </div>
+
+                <!-- 每个 行 和 Section 区块的边界渲染与交互 -->
+                <template v-for="(row, rIdx) in rows" :key="row.id">
+                  <div
+                    v-for="(section, cIdx) in row.sections"
+                    :key="'secbox-' + section.id"
+                    class="absolute border-2 transition-all duration-200 box-border group/sec cursor-pointer"
+                    :class="[
+                      selectedSectionId === section.id
+                        ? 'border-emerald-500 bg-emerald-50/30 z-40 shadow-xl'
+                        : 'border-transparent hover:border-slate-300 hover:bg-slate-50/50 z-10',
+                      section.isOverflow ? 'border-dashed !border-red-400' : '',
+                    ]"
                     :style="
-                      layoutBoxes[index]
+                      section.bound
                         ? {
-                            left: layoutBoxes[index].x + 'px',
-                            top: layoutBoxes[index].y + 'px',
-                            width: layoutBoxes[index].w + 'px',
-                            height: layoutBoxes[index].h + 'px',
+                            left: section.bound.x - form.gap / 2 + 'px',
+                            top: section.bound.y - form.gap / 2 + 'px',
+                            width: section.bound.w + form.gap + 'px',
+                            height: section.bound.h + form.gap + 'px',
+                            borderWidth: `${
+                              (selectedSectionId === section.id ? 2 : 1) /
+                              scaleRatio
+                            }px`,
                           }
                         : { display: 'none' }
                     "
+                    @click.stop="selectedSectionId = section.id"
                   >
-                    <!-- 将 overflow-hidden 移入内部单独包裹 img，避免裁切组内的删除按钮 -->
+                    <!-- 空白上传提示区：如果此区没图 -->
                     <div
-                      class="absolute inset-0 overflow-hidden shadow-sm transition-shadow group-hover:shadow-md"
-                      :style="{ borderRadius: form.radius + 'px' }"
+                      v-if="section.images.length === 0"
+                      class="absolute inset-0 flex flex-col items-center justify-center opacity-50 hover:opacity-100 bg-slate-100/30 backdrop-blur-sm"
                     >
-                      <img
-                        :src="item.url"
-                        class="w-full h-full object-cover pointer-events-none transition-transform duration-300 group-hover:scale-[1.03]"
-                      />
+                      <el-upload
+                        class="w-full h-full flex items-center justify-center opacity-0 absolute inset-0 z-50 cursor-pointer upload-full-cover"
+                        drag
+                        multiple
+                        action="#"
+                        :show-file-list="false"
+                        :auto-upload="false"
+                        :on-change="(file: any) => handleFilesChange(rIdx, cIdx, file)"
+                        accept=".jpg,.jpeg,.png,.webp,.bmp"
+                      >
+                        <div class="w-full h-full"></div>
+                      </el-upload>
+                      <div
+                        class="flex flex-col items-center justify-center pointer-events-none"
+                        :style="{
+                          transform: `scale(${Math.max(
+                            1,
+                            Math.min(10, 1 / scaleRatio)
+                          )})`,
+                        }"
+                      >
+                        <Icon
+                          icon="solar:upload-bold-duotone"
+                          class="text-4xl text-emerald-400 mb-2 pointer-events-none"
+                        />
+                        <div
+                          class="text-sm font-bold text-slate-500 pointer-events-none"
+                        >
+                          点击/拖拽上传图
+                        </div>
+                      </div>
                     </div>
 
-                    <!-- 删除按钮 (不在 overflow-hidden 容器内，不被裁切) -->
+                    <!-- 悬浮删除区块 -->
                     <button
-                      @click="handleRemove(index)"
-                      class="absolute top-4 right-4 z-30 w-12 h-12 rounded-full bg-red-500/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm hover:bg-red-500 shadow-lg border border-white/20 pointer-events-auto"
+                      v-show="selectedSectionId === section.id"
+                      @click.stop="removeSection(rIdx, cIdx)"
+                      class="absolute z-50 rounded-full bg-white text-red-500 flex items-center justify-center shadow-[0_4px_12px_rgba(239,68,68,0.2)] hover:bg-red-500 hover:text-white transition-all duration-300 border border-red-50 hover:border-red-500 hover:scale-110 active:scale-95"
+                      :style="{
+                        width: `${
+                          36 * Math.min(3, Math.max(1, 1 / scaleRatio))
+                        }px`,
+                        height: `${
+                          36 * Math.min(3, Math.max(1, 1 / scaleRatio))
+                        }px`,
+                        top: `${
+                          -18 * Math.min(3, Math.max(1, 1 / scaleRatio))
+                        }px`,
+                        right: `${
+                          -18 * Math.min(3, Math.max(1, 1 / scaleRatio))
+                        }px`,
+                        fontSize: `${
+                          18 * Math.min(3, Math.max(1, 1 / scaleRatio))
+                        }px`,
+                      }"
                     >
-                      <Icon
-                        icon="solar:trash-bin-trash-bold"
-                        class="text-2xl"
-                      />
+                      <Icon icon="solar:trash-bin-trash-bold" />
                     </button>
 
-                    <!-- 拖拽提示层 -->
+                    <!-- 列宽拖拉手柄 (非最后一列) -->
                     <div
-                      v-show="dragIndex === index"
-                      class="absolute inset-0 bg-emerald-500/20 border-4 border-emerald-500 pointer-events-none z-30"
-                    ></div>
+                      v-if="cIdx < row.sections.length - 1"
+                      class="absolute top-0 bottom-0 z-50 cursor-col-resize hover:bg-emerald-500/30 active:bg-emerald-500 transition-colors flex items-center justify-center"
+                      :style="{
+                        width: `${14 / scaleRatio}px`,
+                        right: `${-7 / scaleRatio}px`,
+                      }"
+                      :class="{
+                        'bg-emerald-500/20':
+                          isResizing &&
+                          resizeData.colIdx === cIdx &&
+                          resizeData.rowIdx === rIdx,
+                      }"
+                      @mousedown.stop="startResizeColumn($event, rIdx, cIdx)"
+                    >
+                      <div
+                        class="bg-emerald-400 rounded-full opacity-0 hover:opacity-100 transition-opacity pointer-events-none"
+                        :style="{
+                          width: `${4 / scaleRatio}px`,
+                          height: `${32 / scaleRatio}px`,
+                        }"
+                      ></div>
+                    </div>
+
+                    <!-- 拖放排列层 (图元层) -->
+                    <transition-group
+                      name="grid-move"
+                      tag="div"
+                      class="w-full h-full absolute inset-0 pointer-events-none"
+                      :style="{
+                        zIndex: selectedSectionId === section.id ? 20 : 10,
+                      }"
+                    >
+                      <div
+                        v-for="(item, iIdx) in section.images"
+                        :key="item.id"
+                        class="absolute cursor-move group hover:z-30 pointer-events-auto"
+                        draggable="true"
+                        @dragstart="onDragStart(rIdx, cIdx, iIdx, $event)"
+                        @dragenter="onDragEnter(rIdx, cIdx, iIdx)"
+                        @dragover.prevent
+                        @dragend="onDragEnd"
+                        @click.stop="selectedSectionId = section.id"
+                        :style="
+                          section.boxes && section.boxes[iIdx]
+                            ? {
+                                left:
+                                  section.boxes[iIdx].x -
+                                  (section.bound?.x || 0) +
+                                  form.gap / 2 +
+                                  'px',
+                                top:
+                                  section.boxes[iIdx].y -
+                                  (section.bound?.y || 0) +
+                                  form.gap / 2 +
+                                  'px',
+                                width: section.boxes[iIdx].w + 'px',
+                                height: section.boxes[iIdx].h + 'px',
+                              }
+                            : { display: 'none' }
+                        "
+                      >
+                        <div
+                          class="absolute inset-0 overflow-hidden shadow-sm transition-shadow group-hover:shadow-md"
+                          :style="{ borderRadius: form.radius + 'px' }"
+                        >
+                          <img
+                            :src="item.url"
+                            class="w-full h-full object-cover pointer-events-none transition-transform duration-300 group-hover:scale-[1.03]"
+                          />
+                        </div>
+
+                        <!-- 删除对应图片按钮 -->
+                        <button
+                          v-show="selectedSectionId === section.id"
+                          @click.stop="handleRemove(rIdx, cIdx, iIdx)"
+                          class="absolute z-30 rounded-full bg-black/30 backdrop-blur-md text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-red-500 shadow-lg border border-white/20 pointer-events-auto hover:scale-110 active:scale-95"
+                          :style="{
+                            width: `${
+                              32 * Math.min(3, Math.max(1, 1 / scaleRatio))
+                            }px`,
+                            height: `${
+                              32 * Math.min(3, Math.max(1, 1 / scaleRatio))
+                            }px`,
+                            top: `${
+                              8 * Math.min(3, Math.max(1, 1 / scaleRatio))
+                            }px`,
+                            right: `${
+                              8 * Math.min(3, Math.max(1, 1 / scaleRatio))
+                            }px`,
+                            fontSize: `${
+                              16 * Math.min(3, Math.max(1, 1 / scaleRatio))
+                            }px`,
+                          }"
+                        >
+                          <Icon icon="solar:trash-bin-trash-bold" />
+                        </button>
+
+                        <div
+                          v-show="
+                            dragIndex.rowIdx === rIdx &&
+                            dragIndex.colIdx === cIdx &&
+                            dragIndex.imageIdx === iIdx
+                          "
+                          class="absolute inset-0 bg-emerald-500/20 border-4 border-emerald-500 pointer-events-none z-30"
+                          :style="{ borderRadius: form.radius + 'px' }"
+                        ></div>
+                      </div>
+                    </transition-group>
+
+                    <!-- Section 溢出标记 -->
+                    <div
+                      v-if="section.isOverflow || section.isOverflowX"
+                      class="absolute z-40 bg-red-500/10 border-2 border-dashed border-red-500 pointer-events-none font-bold text-red-500 flex items-end justify-end p-4"
+                      :style="{
+                        left: form.padding + 'px',
+                        top:
+                          section.boxes && section.boxes.length > 0
+                            ? (section.boxes[0]?.y || 0) + 'px'
+                            : 0,
+                        right: form.padding + 'px',
+                        height: '100px',
+                      }"
+                    >
+                      此区块{{ section.isOverflowX ? '宽度' : '高度' }}不足
+                    </div>
                   </div>
-                </transition-group>
+                </template>
               </div>
             </template>
             <template v-else>
@@ -462,7 +1101,7 @@ onUnmounted(() => {
                   class="text-6xl opacity-50"
                 />
                 <p class="text-sm font-medium">
-                  请先上传图片，体验实时渲染排版
+                  请先添加区块与图片，体验排版功能
                 </p>
               </div>
             </template>
@@ -477,146 +1116,158 @@ onUnmounted(() => {
         shadow="hover"
         class="border-slate-200 rounded-2xl custom-card sticky top-6"
       >
-        <template #header>
-          <div class="flex items-center gap-2 font-bold text-slate-800">
-            <Icon
-              icon="solar:settings-bold-duotone"
-              class="text-emerald-500 text-lg"
-            />
-            排版设置
+        <el-form label-position="top" size="large" class="space-y-4">
+          <!-- 选中某个区块时的局部设置 -->
+          <div
+            v-if="selectedSectionId"
+            class="p-4 bg-emerald-50/50 rounded-xl border border-emerald-100 shadow-inner"
+          >
+            <h4
+              class="font-bold text-emerald-800 text-sm mb-3 mt-0 flex justify-between items-center"
+            >
+              <span>当前选中区块配置</span>
+            </h4>
+
+            <template v-for="(row, rIdx) in rows" :key="row.id">
+              <template
+                v-for="(section, cIdx) in row.sections"
+                :key="section.id"
+              >
+                <div v-if="section.id === selectedSectionId" class="space-y-4">
+                  <el-form-item label="区块内部小标题">
+                    <el-input
+                      v-model="section.title"
+                      placeholder="可选小标题"
+                    />
+                  </el-form-item>
+
+                  <el-form-item label="网格排版模式">
+                    <div class="overflow-hidden w-full">
+                      <BoardLayoutSelector
+                        v-model="section.layout"
+                        :layouts="layouts"
+                        class="w-full! box-border"
+                      />
+                    </div>
+                  </el-form-item>
+                  <div class="flex gap-4 w-full">
+                    <el-form-item label="区块宽度配比" class="flex-1">
+                      <el-input-number
+                        v-model="section.widthRatio"
+                        :min="0.1"
+                        :max="20"
+                        :step="1"
+                        class="w-full! border-none"
+                        :controls="false"
+                      />
+                    </el-form-item>
+                    <el-form-item label="区块高度配比" class="flex-1">
+                      <el-input-number
+                        v-model="section.heightRatio"
+                        :min="0.1"
+                        :max="20"
+                        :step="1"
+                        class="w-full! border-none"
+                        :controls="false"
+                      />
+                    </el-form-item>
+                  </div>
+
+                  <div
+                    class="grid grid-cols-2 gap-3 pb-2 border-b border-emerald-200/50"
+                  >
+                    <el-button
+                      size="small"
+                      class="!w-full !m-0 justify-center"
+                      @click="insertRowBefore(rIdx)"
+                    >
+                      <Icon icon="solar:arrow-up-bold" class="mr-1" />上方插入行
+                    </el-button>
+                    <el-button
+                      size="small"
+                      class="!w-full !m-0 justify-center"
+                      @click="insertRowAfter(rIdx)"
+                    >
+                      <Icon
+                        icon="solar:arrow-down-bold"
+                        class="mr-1"
+                      />下方插入行
+                    </el-button>
+                    <el-button
+                      size="small"
+                      class="!w-full !m-0 justify-center"
+                      @click="insertColBefore(rIdx, cIdx)"
+                    >
+                      <Icon
+                        icon="solar:arrow-left-bold"
+                        class="mr-1"
+                      />左侧插入列
+                    </el-button>
+                    <el-button
+                      size="small"
+                      class="!w-full !m-0 justify-center"
+                      @click="insertColAfter(rIdx, cIdx)"
+                    >
+                      <Icon
+                        icon="solar:arrow-right-bold"
+                        class="mr-1"
+                      />右侧插入列
+                    </el-button>
+                  </div>
+
+                  <el-button
+                    type="danger"
+                    plain
+                    class="w-full !mt-2"
+                    @click="removeSection(rIdx, cIdx)"
+                  >
+                    <Icon icon="solar:trash-bin-trash-bold" class="mr-1" />
+                    删除当前区块
+                  </el-button>
+
+                  <el-form-item label="拖拽上传更多图片">
+                    <el-upload
+                      class="w-full board-uploader"
+                      drag
+                      multiple
+                      action="#"
+                      :show-file-list="false"
+                      :auto-upload="false"
+                      :on-change="(file: any) => handleFilesChange(rIdx, cIdx, file)"
+                      accept=".jpg,.jpeg,.png,.webp,.bmp"
+                    >
+                      <div
+                        class="flex flex-col items-center justify-center py-3 text-slate-400"
+                      >
+                        <Icon
+                          icon="solar:upload-bold-duotone"
+                          class="text-3xl text-emerald-400 mb-1"
+                        />
+                        <div
+                          class="el-upload__text font-medium text-slate-600 text-xs"
+                        >
+                          拖拽 / 点击增加图
+                        </div>
+                      </div>
+                    </el-upload>
+                  </el-form-item>
+                </div>
+              </template>
+            </template>
           </div>
-        </template>
-
-        <el-form label-position="top" size="large" class="space-y-2">
-          <!-- 排版模板 -->
-          <el-form-item label="排版模板">
-            <BoardLayoutSelector v-model="form.layout" :layouts="layouts" />
-          </el-form-item>
-
-          <!-- 画板尺寸 -->
-          <el-form-item label="画板尺寸 (宽 x 高)">
-            <div class="flex items-center gap-2 w-full">
-              <el-input-number
-                v-model="form.width"
-                :min="1"
-                :step="form.unit === 'px' ? 100 : 10"
-                class="!w-full"
-                :controls="false"
-                placeholder="宽"
-              />
-              <span class="text-slate-400 text-sm">x</span>
-              <el-input-number
-                v-model="form.height"
-                :min="1"
-                :step="form.unit === 'px' ? 100 : 10"
-                class="!w-full"
-                :controls="false"
-                placeholder="高"
-              />
-              <el-select v-model="form.unit" class="w-24">
-                <el-option label="px" value="px" />
-                <el-option label="mm" value="mm" />
-                <el-option label="cm" value="cm" />
-                <el-option label="in" value="in" />
-              </el-select>
-            </div>
-            <div class="flex gap-2 mt-2 w-full">
-              <el-tag
-                size="small"
-                class="cursor-pointer"
-                @click="setDimensions(1920, 1080)"
-                >1920x1080 (px)</el-tag
-              >
-              <el-tag
-                size="small"
-                class="cursor-pointer"
-                @click="setDimensions(1080, 1920)"
-                >1080x1920 (px)</el-tag
-              >
-              <el-tag
-                size="small"
-                class="cursor-pointer"
-                @click="setDimensions(210, 297, 'mm')"
-                >A4 版面</el-tag
-              >
-            </div>
-          </el-form-item>
-
-          <!-- 四周留白 -->
-          <el-form-item label="四周留白 (Padding px)">
-            <el-slider
-              v-model="form.padding"
-              :min="0"
-              :max="300"
-              :step="5"
-              class="px-2"
-            />
-          </el-form-item>
-
-          <!-- 间距 -->
-          <el-form-item label="图片间距 (px)">
-            <el-slider
-              v-model="form.gap"
-              :min="0"
-              :max="300"
-              :step="5"
-              class="px-2"
-            />
-          </el-form-item>
-
-          <!-- 图片圆角 (仅限预览) -->
-          <el-form-item label="图片圆角 (仅预览视觉px)">
-            <el-slider
-              v-model="form.radius"
-              :min="0"
-              :max="200"
-              :step="2"
-              class="px-2"
-            />
-          </el-form-item>
-
-          <!-- 背景色 -->
-          <el-form-item label="背景颜色">
-            <el-color-picker
-              v-model="form.bgColor"
-              :predefine="[
-                '#FFFFFF',
-                '#000000',
-                '#F3F4F6',
-                '#EF4444',
-                '#3B82F6',
-                '#10B981',
-              ]"
-            />
-          </el-form-item>
-
-          <!-- 输出DPI -->
-          <el-form-item label="PSD 输出分辨率 (DPI)">
-            <el-input-number
-              v-model="form.dpi"
-              :min="72"
-              :max="600"
-              :step="72"
-              class="!w-full"
-            />
-          </el-form-item>
-        </el-form>
-
-        <div class="mt-8">
-          <el-button
-            type="primary"
-            class="w-full !h-14 !rounded-2xl !font-bold !text-lg !m-0 transition-transform hover:scale-[1.02] shadow-lg shadow-emerald-500/30"
-            :loading="isExporting"
-            @click="handleExport"
+          <div
+            v-else
+            class="flex flex-col items-center justify-center p-10 text-slate-400 border border-dashed border-slate-200 rounded-xl"
           >
             <Icon
-              icon="solar:download-minimalistic-bold-duotone"
-              class="mr-2 text-xl"
-              v-if="!isExporting"
+              icon="solar:cursor-square-line-duotone"
+              class="text-4xl mb-2 opacity-50"
             />
-            导出为 PSD (原图分层)
-          </el-button>
-        </div>
+            <p class="text-sm font-medium">
+              请点击左侧画布中的区块以进行详细排版配置
+            </p>
+          </div>
+        </el-form>
       </el-card>
     </template>
   </ToolPageLayout>
@@ -643,6 +1294,19 @@ onUnmounted(() => {
 .board-uploader :deep(.el-upload-dragger:hover) {
   border-color: #10b981;
   background-color: #ecfdf5;
+}
+
+/* 确保预览区空白占位符能完全覆盖区域，支持点击触发系统文件选择框 */
+.upload-full-cover :deep(.el-upload),
+.upload-full-cover :deep(.el-upload-dragger) {
+  width: 100%;
+  height: 100%;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  padding: 0;
 }
 
 /* Grid Move Animation using FLIP provided by Vue transition-group */

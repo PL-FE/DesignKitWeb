@@ -105,4 +105,24 @@ defineProps<{
     <div class="bg-current rounded-[2px] opacity-80"></div>
     <div class="bg-current rounded-[2px] col-span-3 opacity-80"></div>
   </div>
+
+  <div
+    class="w-full h-full grid grid-rows-3"
+    style="gap: 4%"
+    v-else-if="layout === 'equal_rows'"
+  >
+    <div class="bg-current rounded-[2px] opacity-80"></div>
+    <div class="bg-current rounded-[2px] opacity-80"></div>
+    <div class="bg-current rounded-[2px] opacity-80"></div>
+  </div>
+
+  <div
+    class="w-full h-full grid grid-cols-3"
+    style="gap: 4%"
+    v-else-if="layout === 'equal_cols'"
+  >
+    <div class="bg-current rounded-[2px] opacity-80"></div>
+    <div class="bg-current rounded-[2px] opacity-80"></div>
+    <div class="bg-current rounded-[2px] opacity-80"></div>
+  </div>
 </template>

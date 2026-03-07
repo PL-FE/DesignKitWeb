@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  .container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 800px;
+    height: 600px;
+    background: #ccc;
+    position: relative;
+    overflow: hidden;
+  }
+  .child {
+    position: absolute;
+    width: 1920px;
+    height: 2500px;
+    background: red;
+    transform: scale(0.3);
+    transform-origin: top;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="child"></div>
+</div>
+</body>
+</html>
