@@ -1,6 +1,7 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
+import '@unocss/reset/tailwind.css'
 import 'element-plus/dist/index.css'
 import 'virtual:uno.css'
 import './style.scss'

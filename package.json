@@ -24,6 +24,7 @@
     "@types/node": "^24.10.1",
     "@unocss/preset-attributify": "^66.6.0",
     "@unocss/preset-uno": "^66.6.0",
+    "@unocss/reset": "^66.6.6",
     "@vitejs/plugin-vue": "^6.0.2",
     "@vue/tsconfig": "^0.8.1",
     "sass": "^1.97.3",
