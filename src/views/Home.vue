@@ -187,6 +187,14 @@ const tools = [
     route: '/audio-merge',
     color: 'from-blue-500 to-cyan-500',
   },
+  {
+    id: 'store-mockup',
+    name: '上架图生成器',
+    description: '快速生成 iOS/安卓商店预览图，支持自定义文字、背景及多尺寸预设',
+    icon: 'solar:gallery-edit-bold-duotone',
+    route: '/store-mockup',
+    color: 'from-indigo-500 to-blue-600',
+  },
 ]
 </script>
 

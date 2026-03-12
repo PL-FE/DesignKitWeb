@@ -78,6 +78,12 @@ const router = createRouter({
       component: () => import('@/views/AudioMerge.vue'),
       meta: { title: '音乐合并 - DesignKit' },
     },
+    {
+      path: '/store-mockup',
+      name: 'store-mockup',
+      component: () => import('@/views/StoreMockup.vue'),
+      meta: { title: 'App 上架图生成 - DesignKit' },
+    },
   ],
 })
 
