@@ -116,6 +116,14 @@ const tools = [
     color: 'from-violet-500 to-pink-500',
   },
   {
+    id: 'image-resizer',
+    name: '图片尺寸修改',
+    description: '自由调宽高或缩放比例，纯本地 Canvas 处理，快速且私密',
+    icon: 'solar:smartphone-rotate-orientation-bold-duotone',
+    route: '/image-resizer',
+    color: 'from-amber-400 to-orange-500',
+  },
+  {
     id: 'video-info',
     name: '媒体信息查看',
     description: '查看视频/音频文件的分辨率、编码、帧率、码率等详细参数',

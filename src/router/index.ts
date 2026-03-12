@@ -25,6 +25,12 @@ const router = createRouter({
       meta: { title: '图片压缩 - DesignKit' },
     },
     {
+      path: '/image-resizer',
+      name: 'image-resizer',
+      component: () => import('@/views/ImageResizer.vue'),
+      meta: { title: '图片尺寸修改 - DesignKit' },
+    },
+    {
       path: '/video-info',
       name: 'video-info',
       component: () => import('@/views/VideoInfo.vue'),
