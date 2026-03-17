@@ -89,6 +89,57 @@
         </div>
       </div>
     </div>
+
+    <!-- 外站工具推荐 -->
+    <div class="mt-12 sm:mt-16 mb-4 sm:mb-6 animate-fade-in-up" style="animation-delay: 200ms">
+      <div class="flex items-center gap-3 px-2">
+        <h3 class="text-xl sm:text-2xl font-black text-slate-800 tracking-tight m-0">推荐外部工具</h3>
+        <el-tag effect="light" round size="small" class="!border-violet-200 !text-violet-600 !bg-violet-50 font-bold">精选</el-tag>
+      </div>
+      <p class="text-slate-500 text-sm mt-1 px-2 font-medium m-0">一些非常实用的在线设计与工程扩展工具</p>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 w-full z-10 relative mb-12">
+      <a
+        v-for="(tool, index) in externalTools"
+        :key="tool.name"
+        :href="tool.url"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="group relative bg-white rounded-xl p-5 border border-slate-200 shadow-sm hover:shadow-md hover:border-violet-300 transition-all duration-300 cursor-pointer overflow-hidden flex flex-col sm:flex-row items-start sm:items-center gap-4 no-underline !text-inherit"
+        :style="{ animationDelay: `${(index + tools.length) * 50}ms` }"
+        style="animation: fadeInUp 0.5s ease backwards"
+      >
+        <div
+          class="w-12 h-12 rounded-lg text-white flex items-center justify-center text-2xl shadow-sm bg-gradient-to-br flex-shrink-0"
+          :class="tool.color"
+        >
+          <Icon :icon="tool.icon" />
+        </div>
+
+        <div class="flex-1 min-w-0 flex flex-col justify-center text-left">
+          <div class="flex items-center gap-2 mb-1">
+            <h3
+              class="text-base sm:text-lg font-bold text-slate-800 tracking-tight truncate group-hover:text-violet-600 transition-colors m-0"
+            >
+              {{ tool.name }}
+            </h3>
+            <Icon icon="solar:global-bold-duotone" class="text-slate-300 text-sm flex-shrink-0" />
+          </div>
+          <p
+            class="text-slate-500 text-xs sm:text-sm leading-snug font-medium line-clamp-2 m-0"
+          >
+            {{ tool.description }}
+          </p>
+        </div>
+
+        <div
+          class="hidden sm:flex w-8 h-8 rounded-full bg-slate-50 items-center justify-center text-slate-400 group-hover:bg-violet-50 group-hover:text-violet-600 transition-colors flex-shrink-0"
+        >
+          <Icon icon="solar:arrow-right-up-linear" class="text-lg" />
+        </div>
+      </a>
+    </div>
   </div>
 </template>
 
@@ -194,6 +245,16 @@ const tools = [
     icon: 'solar:gallery-edit-bold-duotone',
     route: '/store-mockup',
     color: 'from-indigo-500 to-blue-600',
+  },
+]
+
+const externalTools = [
+  {
+    name: 'AI 背景去除',
+    description: 'Remove.photos - 快速、高质量的在线 AI 抠图工具，轻松移除图片背景',
+    icon: 'solar:magic-stick-3-bold-duotone',
+    url: 'https://remove.photos/',
+    color: 'from-pink-500 to-rose-500',
   },
 ]
 </script>
