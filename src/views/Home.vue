@@ -250,6 +250,13 @@ const tools = [
 
 const externalTools = [
   {
+    name: 'SoftCopyright',
+    description: '智能软件著作权申请材料生成工具',
+    icon: 'solar:document-text-bold-duotone',
+    url: 'https://ai.codefather.cn/skills/2014279422243713026',
+    color: 'from-indigo-500 to-violet-500',
+  },
+  {
     name: 'AI 背景去除',
     description: 'Remove.photos - 快速、高质量的在线 AI 抠图工具，轻松移除图片背景',
     icon: 'solar:magic-stick-3-bold-duotone',
