@@ -399,6 +399,25 @@ onUnmounted(() => {
     />
 
     <div
+      class="mb-6 flex items-center gap-3 rounded-2xl border border-blue-100 bg-blue-50/50 px-5 py-4 text-sm text-blue-700"
+    >
+      <Icon
+        icon="solar:lightbulb-bold-duotone"
+        class="text-xl shrink-0 text-amber-500"
+      />
+      <div class="leading-relaxed">
+        可以先将截图带壳，更好看。在线转换：
+        <a
+          href="https://mockuphone.com/type/all/"
+          target="_blank"
+          class="font-bold text-blue-600 underline hover:text-blue-700 transition-colors"
+        >
+          https://mockuphone.com/type/all/
+        </a>
+      </div>
+    </div>
+
+    <div
       v-if="mockupList.length === 0"
       class="init-container rounded-[36px] border border-slate-200/80 bg-white/90 shadow-[0_24px_80px_rgba(15,23,42,0.08)] overflow-hidden animate-fade-in"
     >
