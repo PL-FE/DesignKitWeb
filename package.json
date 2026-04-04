@@ -14,6 +14,7 @@
     "@vueuse/core": "^14.2.1",
     "axios": "^1.13.5",
     "element-plus": "^2.13.2",
+    "jszip": "^3.10.1",
     "pinia": "^3.0.4",
     "pinia-plugin-persistedstate": "^4.7.1",
     "vue": "^3.5.25",
@@ -21,6 +22,7 @@
     "vuedraggable": "^4.1.0"
   },
   "devDependencies": {
+    "@types/jszip": "^3.4.1",
     "@types/node": "^24.10.1",
     "@unocss/preset-attributify": "^66.6.0",
     "@unocss/preset-uno": "^66.6.0",

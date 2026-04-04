@@ -84,6 +84,12 @@ const router = createRouter({
       component: () => import('@/views/StoreMockup.vue'),
       meta: { title: 'App 上架图生成 - DesignKit' },
     },
+    {
+      path: '/app-icon-generator',
+      name: 'app-icon-generator',
+      component: () => import('@/views/AppIconGenerator.vue'),
+      meta: { title: 'App 图标批处理 - DesignKit' },
+    },
   ],
 })
 

@@ -246,6 +246,14 @@ const tools = [
     route: '/store-mockup',
     color: 'from-indigo-500 to-blue-600',
   },
+  {
+    id: 'app-icon-generator',
+    name: 'App 图标批处理',
+    description: '上传一张图，快速生成各种尺寸的 App 图标并打包下载',
+    icon: 'solar:widget-add-bold-duotone',
+    route: '/app-icon-generator',
+    color: 'from-blue-600 to-indigo-600',
+  },
 ]
 
 const externalTools = [
