@@ -133,8 +133,6 @@
       </div>
     </div>
 
-    <!-- Hidden Canvas for Processing -->
-    <canvas ref="processCanvas" class="hidden"></canvas>
   </div>
 </template>
 
@@ -144,10 +142,10 @@ import { useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
 import { ElMessage } from 'element-plus'
 import JSZip from 'jszip'
+import UPNG from 'upng-js'
 
 const router = useRouter()
 const fileInput = ref<HTMLInputElement | null>(null)
-const processCanvas = ref<HTMLCanvasElement | null>(null)
 const sourceImage = ref<string | null>(null)
 const processing = ref(false)
 const newSize = ref(512)
@@ -239,17 +237,36 @@ const generateAndDownload = async () => {
     img.src = sourceImage.value
     await new Promise((resolve) => (img.onload = resolve))
 
-    const canvas = processCanvas.value!
-    const ctx = canvas.getContext('2d')!
+    // 使用离屏 Canvas 且设置为不支持 alpha 通道，以符合 Apple 商店 PNG 规范
+    const offscreen = document.createElement('canvas')
+    const offCtx = offscreen.getContext('2d', { alpha: false })!
 
     // Function to generate blob for a size
     const createResizedBlob = (width: number, height: number): Promise<Blob> => {
       return new Promise((resolve) => {
-        canvas.width = width
-        canvas.height = height
-        ctx.clearRect(0, 0, width, height)
-        ctx.drawImage(img, 0, 0, width, height)
-        canvas.toBlob((blob) => resolve(blob!), 'image/png')
+        offscreen.width = width
+        offscreen.height = height
+        
+        // 填充白色背景（防止原图透明区域变黑）
+        offCtx.fillStyle = '#FFFFFF'
+        offCtx.fillRect(0, 0, width, height)
+        
+        // 绘制图像
+        offCtx.drawImage(img, 0, 0, width, height)
+        
+        // 取出像素数据，使用 UPNG 进行严格的无 Alpha 通道编码
+        const imageData = offCtx.getImageData(0, 0, width, height)
+        const data = imageData.data
+        
+        // 强制确保 Alpha 通道为 255 (完全不透明)，
+        // UPNG.js 内部检测到所有 Alpha 均为 255 时，会自动降级为纯粹的 24位真彩色 Color Type 2 格式的 PNG！
+        for (let i = 0; i < data.length; i += 4) {
+          data[i + 3] = 255
+        }
+        
+        // 0 表示无损压缩
+        const pngBuffer = UPNG.encode([data.buffer], width, height, 0)
+        resolve(new Blob([pngBuffer], { type: 'image/png' }))
       })
     }
 
