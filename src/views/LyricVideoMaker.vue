@@ -11,11 +11,11 @@ const lrcFile = ref<File | null>(null)
 const lrcLines = ref<Array<{ time: number; text: string }>>([])
 
 // ——— 合成参数（自动持久化到 localStorage）———
-const bgColor       = useLocalStorage('lv:bg_color',       '#0a0a1a')
+const bgColor       = useLocalStorage('lv:bg_color',       '#000000')
 const fontSize      = useLocalStorage('lv:font_size',      150)
 const fontColor     = useLocalStorage('lv:font_color',     '#ffffff')
 const strokeColor   = useLocalStorage('lv:stroke_color',   '#000000')
-const strokeWidth   = useLocalStorage('lv:stroke_width',   4)
+const strokeWidth   = useLocalStorage('lv:stroke_width',   0)
 const resolution    = useLocalStorage('lv:resolution',     '720x1280')
 const removeVocals  = useLocalStorage('lv:remove_vocals',  false)
 const letterSpacing = useLocalStorage('lv:letter_spacing', 8)    // 字符间距（px）
@@ -283,10 +283,10 @@ const statusText = computed(() => {
                 <el-input v-model="bgColor" placeholder="#0a0a1a" class="flex-1 font-mono text-sm" />
                 <div class="flex gap-1.5">
                   <button
-                    v-for="c in ['#0a0a1a', '#1a0533', '#0d1f3c', '#0f2010', '#1a1a1a']"
+                    v-for="c in ['#000000', '#1a1a1a', '#1a0533', '#0d1f3c', '#0f2010']"
                     :key="c"
-                    class="w-6 h-6 rounded-md border-2 transition-all hover:scale-110"
-                    :class="bgColor === c ? 'border-violet-500 scale-110' : 'border-transparent'"
+                    class="w-6 h-6 rounded-md border-2 transition-transform hover:scale-110 active:scale-95"
+                    :class="bgColor.toLowerCase() === c.toLowerCase() ? 'border-violet-500 scale-110' : 'border-slate-300'"
                     :style="{ background: c }"
                     @click="bgColor = c"
                   />

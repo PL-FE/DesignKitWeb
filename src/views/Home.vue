@@ -279,6 +279,13 @@ const externalTools = [
     url: 'https://remove.photos/',
     color: 'from-pink-500 to-rose-500',
   },
+  {
+    name: 'Vocal Remover',
+    description: '基于人工智能技术的免费在线人声分离和隔离，从音频中提取伴奏和人声',
+    icon: 'solar:music-note-bold-duotone',
+    url: 'https://vocalremover.org/zh/',
+    color: 'from-blue-500 to-cyan-500',
+  },
 ]
 </script>
 
