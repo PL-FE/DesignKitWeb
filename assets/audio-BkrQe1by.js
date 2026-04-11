@@ -1,0 +1,1 @@
+import{a4 as o}from"./index-3QbVgXtR.js";const r=async e=>(await o.post("/audio/vocal-removal",e,{responseType:"blob",timeout:0})).data;async function t(e){return(await o.post("/audio/merge",e,{responseType:"blob"})).data}export{t as m,r};
