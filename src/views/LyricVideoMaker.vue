@@ -16,7 +16,7 @@ const fontSize      = useLocalStorage('lv:font_size',      150)
 const fontColor     = useLocalStorage('lv:font_color',     '#ffffff')
 const strokeColor   = useLocalStorage('lv:stroke_color',   '#000000')
 const strokeWidth   = useLocalStorage('lv:stroke_width',   4)
-const resolution    = useLocalStorage('lv:resolution',     '1920x1080')
+const resolution    = useLocalStorage('lv:resolution',     '1280x720')
 const removeVocals  = useLocalStorage('lv:remove_vocals',  false)
 const letterSpacing = useLocalStorage('lv:letter_spacing', 8)    // 字符间距（px）
 const lineGapRatio  = useLocalStorage('lv:line_gap_ratio', 1.5)  // 行间距倍数
@@ -29,10 +29,11 @@ const videoUrl = ref<string | null>(null)
 const outputFilename = ref('')
 
 const resolutionOptions = [
-  { label: '竖屏 1080×1920（推荐，抖音/B站竖版）', value: '1080x1920' },
-  { label: '横屏 1920×1080（YouTube/B站横版）', value: '1920x1080' },
-  { label: '竖屏 720×1280（较小文件）', value: '720x1280' },
-  { label: '正方形 1080×1080（Instagram）', value: '1080x1080' },
+  { label: '竖屏 720×1280（推荐，性能最佳）', value: '720x1280' },
+  { label: '横屏 1280×720（推荐，性能最佳）', value: '1280x720' },
+  { label: '竖屏 1080×1920（高负载，容易超时）', value: '1080x1920' },
+  { label: '横屏 1920×1080（高负载，容易超时）', value: '1920x1080' },
+  { label: '正方形 1080×1080', value: '1080x1080' },
 ]
 
 // ——— LRC 预览分页 ———
@@ -122,7 +123,7 @@ const statusText = computed(() => {
   if (status.value === 'uploading') return `上传中 ${uploadPercent.value}%`
   if (status.value === 'processing')
     return removeVocals.value
-      ? '正在 AI 分离人声并合成视频，可能需要 1~3 分钟...'
+      ? '正在 AI 分离人声并合成视频，限时 2 分钟...'
       : '正在合成视频，请稍候...'
   return ''
 })
@@ -374,7 +375,7 @@ const statusText = computed(() => {
                     <div class="flex items-start gap-2">
                       <Icon icon="solar:clock-circle-bold-duotone" class="text-amber-500 text-sm mt-0.5 flex-shrink-0" />
                       <p class="text-xs text-amber-700 leading-relaxed">
-                        AI 人声分离耗时约 30 秒 ~ 3 分钟，视音频时长而定，请耐心等待。
+                        AI 人声分离与合成需在 2 分钟内完成，音频建议不要超过 5 分钟，请耐心等待。
                       </p>
                     </div>
                   </div>
