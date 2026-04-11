@@ -254,6 +254,14 @@ const tools = [
     route: '/app-icon-generator',
     color: 'from-blue-600 to-indigo-600',
   },
+  {
+    id: 'lyric-video',
+    name: '歌词视频合成',
+    description: '上传音频 + LRC 歌词，生成带大字幕提词的 MP4 视频，支持 AI 人声去除',
+    icon: 'solar:clapperboard-play-bold-duotone',
+    route: '/lyric-video',
+    color: 'from-violet-600 to-fuchsia-500',
+  },
 ]
 
 const externalTools = [

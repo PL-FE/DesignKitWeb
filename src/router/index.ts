@@ -90,6 +90,12 @@ const router = createRouter({
       component: () => import('@/views/AppIconGenerator.vue'),
       meta: { title: 'App 图标批处理 - DesignKit' },
     },
+    {
+      path: '/lyric-video',
+      name: 'lyric-video',
+      component: () => import('@/views/LyricVideoMaker.vue'),
+      meta: { title: '歌词视频合成 - DesignKit' },
+    },
   ],
 })
 
