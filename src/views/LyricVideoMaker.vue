@@ -16,7 +16,7 @@ const fontSize      = useLocalStorage('lv:font_size',      150)
 const fontColor     = useLocalStorage('lv:font_color',     '#ffffff')
 const strokeColor   = useLocalStorage('lv:stroke_color',   '#000000')
 const strokeWidth   = useLocalStorage('lv:stroke_width',   0)
-const resolution    = useLocalStorage('lv:resolution',     '720x1280')
+const resolution    = useLocalStorage('lv:resolution',     '1280x720')
 const removeVocals  = useLocalStorage('lv:remove_vocals',  false)
 const letterSpacing = useLocalStorage('lv:letter_spacing', 8)    // 字符间距（px）
 const lineGapRatio  = useLocalStorage('lv:line_gap_ratio', 1.5)  // 行间距倍数
@@ -29,11 +29,8 @@ const videoUrl = ref<string | null>(null)
 const outputFilename = ref('')
 
 const resolutionOptions = [
-  { label: '竖屏 720×1280（推荐，性能最佳）', value: '720x1280' },
   { label: '横屏 1280×720（推荐，性能最佳）', value: '1280x720' },
-  { label: '竖屏 1080×1920（高负载，容易超时）', value: '1080x1920' },
   { label: '横屏 1920×1080（高负载，容易超时）', value: '1920x1080' },
-  { label: '正方形 1080×1080', value: '1080x1080' },
 ]
 
 // ——— LRC 预览分页 ———
