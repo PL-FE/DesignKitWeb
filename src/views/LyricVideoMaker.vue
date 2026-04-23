@@ -20,6 +20,8 @@ const resolution    = useLocalStorage('lv:resolution',     '1280x720')
 const removeVocals  = useLocalStorage('lv:remove_vocals',  false)
 const letterSpacing = useLocalStorage('lv:letter_spacing', 8)    // 字符间距（px）
 const lineGapRatio  = useLocalStorage('lv:line_gap_ratio', 1.5)  // 行间距倍数
+const wrapMode      = useLocalStorage('lv:wrap_mode', 'auto')    // 换行模式
+const maxCharsPerLine = useLocalStorage('lv:max_chars_per_line', 11) // 手动模式下每行最大字符数
 
 // ——— 处理状态 ———
 const isLoading = ref(false)
@@ -86,6 +88,8 @@ async function handleGenerate() {
         remove_vocals: removeVocals.value,
         letter_spacing: letterSpacing.value,
         line_gap_ratio: lineGapRatio.value,
+        wrap_mode: wrapMode.value,
+        max_chars_per_line: maxCharsPerLine.value,
       },
       (percent) => {
         uploadPercent.value = percent
@@ -118,10 +122,7 @@ function downloadVideo() {
 
 const statusText = computed(() => {
   if (status.value === 'uploading') return `上传中 ${uploadPercent.value}%`
-  if (status.value === 'processing')
-    return removeVocals.value
-      ? '正在 AI 分离人声并合成视频，限时 2 分钟...'
-      : '正在合成视频，请稍候...'
+  if (status.value === 'processing') return '正在合成视频，请稍候...'
   return ''
 })
 </script>
@@ -140,7 +141,7 @@ const statusText = computed(() => {
           歌词视频合成
         </h2>
         <p class="text-slate-500 text-xs md:text-sm mt-1">
-          上传音频 + LRC 歌词，生成带大字幕提词的 MP4 视频 · 三行滚动显示 · 支持 AI 人声移除
+          上传音频 + LRC 歌词，生成带大字幕提词的 MP4 视频 · 三行滚动显示
         </p>
       </div>
     </div>
@@ -312,7 +313,31 @@ const statusText = computed(() => {
               <template #label>
                 <span>行间距 <span class="font-bold text-violet-600">{{ lineGapRatio }}×</span></span>
               </template>
-              <el-slider v-model="lineGapRatio" :min="1.0" :max="3.0" :step="0.1" class="w-full" /></el-form-item>
+              <el-slider v-model="lineGapRatio" :min="1.0" :max="3.0" :step="0.1" class="w-full" />
+            </el-form-item>
+
+            <!-- 换行模式 -->
+            <el-form-item label="歌词换行">
+              <div class="flex items-center gap-3 w-full">
+                <el-radio-group v-model="wrapMode" size="small">
+                  <el-radio-button value="auto">自动换行</el-radio-button>
+                  <el-radio-button value="chars">指定字数</el-radio-button>
+                </el-radio-group>
+                <el-input-number
+                  v-if="wrapMode === 'chars'"
+                  v-model="maxCharsPerLine"
+                  :min="4"
+                  :max="20"
+                  :step="1"
+                  size="small"
+                  class="!w-20"
+                  controls-position="right"
+                />
+                <span v-if="wrapMode === 'chars'" class="text-slate-400 text-sm">字/行</span>
+              </div>
+              <p v-if="wrapMode === 'auto'" class="text-xs text-slate-400 mt-1">根据视频宽度、字号和间距自动计算每行字符数</p>
+              <p v-if="wrapMode === 'chars'" class="text-xs text-slate-400 mt-1">超出指定字数时自动换行，例如 11 字/行</p>
+            </el-form-item>
 
             <!-- 字体颜色 -->
             <el-form-item label="歌词颜色">
@@ -347,36 +372,25 @@ const statusText = computed(() => {
               </div>
             </el-form-item>
 
-            <!-- 去除人声 -->
+            <!-- 去除人声（已隐藏开关，改为提示） -->
             <el-form-item>
               <div
-                class="remove-vocals-card w-full rounded-xl p-4 border transition-all"
-                :class="removeVocals ? 'border-violet-300 bg-violet-50' : 'border-slate-200 bg-slate-50'"
+                class="w-full rounded-xl p-4 border border-amber-200 bg-amber-50/60"
               >
-                <div class="flex items-center justify-between">
-                  <div class="flex items-center gap-2">
-                    <Icon
-                      icon="solar:microphone-slash-bold-duotone"
-                      class="text-xl transition-colors"
-                      :class="removeVocals ? 'text-violet-500' : 'text-slate-400'"
-                    />
-                    <div>
-                      <p class="font-bold text-sm text-slate-800">去除人声（AI 伴奏提取）</p>
-                      <p class="text-xs text-slate-500 mt-0.5">用 AI 分离伴奏，视频音轨使用纯净伴奏</p>
-                    </div>
+                <div class="flex items-center gap-2">
+                  <Icon
+                    icon="solar:info-circle-bold-duotone"
+                    class="text-xl text-amber-500"
+                  />
+                  <div>
+                    <p class="font-bold text-sm text-slate-800">需要去除人声？</p>
+                    <p class="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                      请先前往
+                      <a href="https://vocalremover.org/zh/" target="_blank" rel="noopener noreferrer" class="text-violet-600 font-semibold underline underline-offset-2 hover:text-violet-700">vocalremover.org</a>
+                      去人声，下载伴奏后再回来合成视频。
+                    </p>
                   </div>
-                  <el-switch v-model="removeVocals" />
                 </div>
-                <transition name="slide-down">
-                  <div v-if="removeVocals" class="mt-3 pt-3 border-t border-violet-200">
-                    <div class="flex items-start gap-2">
-                      <Icon icon="solar:clock-circle-bold-duotone" class="text-amber-500 text-sm mt-0.5 flex-shrink-0" />
-                      <p class="text-xs text-amber-700 leading-relaxed">
-                        AI 人声分离与合成需在 2 分钟内完成，音频建议不要超过 5 分钟，请耐心等待。
-                      </p>
-                    </div>
-                  </div>
-                </transition>
               </div>
             </el-form-item>
           </el-form>

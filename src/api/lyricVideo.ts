@@ -11,8 +11,10 @@ export interface LyricVideoParams {
   stroke_width: number
   resolution: string
   remove_vocals: boolean
-  letter_spacing: number   // 字符间距（px）
-  line_gap_ratio: number   // 行间距倍数
+  letter_spacing: number
+  line_gap_ratio: number
+  wrap_mode: string
+  max_chars_per_line: number
 }
 
 /**
@@ -35,6 +37,8 @@ export async function generateLyricVideo(
   formData.append('remove_vocals', String(params.remove_vocals))
   formData.append('letter_spacing', String(params.letter_spacing))
   formData.append('line_gap_ratio', String(params.line_gap_ratio))
+  formData.append('wrap_mode', params.wrap_mode)
+  formData.append('max_chars_per_line', String(params.max_chars_per_line))
 
   const response = await request.post('/lyric-video/generate', formData, {
     responseType: 'blob',
@@ -66,9 +70,9 @@ export function parseLrcClient(lrcContent: string): Array<{ time: number; text: 
     let m: RegExpExecArray | null
     const rowTags = [...trimmed.matchAll(/\[(\d{1,3}):(\d{2})\.(\d{1,3})\]/g)]
     for (const tag of rowTags) {
-      const minutes = parseInt(tag[1])
-      const seconds = parseInt(tag[2])
-      const ms = parseInt(tag[3].padEnd(3, '0').slice(0, 3))
+      const minutes = parseInt(tag[1] ?? '0')
+      const seconds = parseInt(tag[2] ?? '0')
+      const ms = parseInt((tag[3] ?? '0').padEnd(3, '0').slice(0, 3))
       const totalSeconds = minutes * 60 + seconds + ms / 1000
       lines.push({ time: totalSeconds, text })
     }
