@@ -23,6 +23,7 @@ const letterSpacing = useLocalStorage('lv:letter_spacing', 0)     // 字符间�
 const lineGapRatio  = useLocalStorage('lv:line_gap_ratio', 1.5)  // 行间距倍数
 const wrapMode      = useLocalStorage('lv:wrap_mode', 'auto')    // 换行模式
 const maxCharsPerLine = useLocalStorage('lv:max_chars_per_line', 11) // 手动模式下每行最大字符数
+const backgroundMode = useLocalStorage<'video' | 'image' | 'color'>('lv:background_mode', 'video')
 
 // ——— 处理状态 ———
 const isLoading = ref(false)
@@ -34,6 +35,12 @@ const outputFilename = ref('')
 const resolutionOptions = [
   { label: '横屏 1280×720（推荐，性能最佳）', value: '1280x720' },
   { label: '横屏 1920×1080（高负载，容易超时）', value: '1920x1080' },
+]
+
+const backgroundModeOptions = [
+  { label: '视频背景', value: 'video' },
+  { label: '图片背景', value: 'image' },
+  { label: '纯色背景', value: 'color' },
 ]
 
 // ——— LRC 预览分页 ———
@@ -81,6 +88,7 @@ async function handleGenerate() {
         audio: audioFile.value,
         lrc: lrcFile.value,
         bg_color: bgColor.value,
+        background_mode: backgroundMode.value,
         font_size: fontSize.value,
         sung_color: sungColor.value,
         unsung_color: unsungColor.value,
@@ -274,6 +282,15 @@ const statusText = computed(() => {
                   :value="opt.value"
                 />
               </el-select>
+            </el-form-item>
+
+            <el-form-item label="背景类型">
+              <el-segmented v-model="backgroundMode" :options="backgroundModeOptions" class="w-full" />
+              <p class="text-xs text-slate-400 mt-2">
+                <span v-if="backgroundMode === 'video'">优先使用内置背景视频，失败时自动回退到图片或动态光晕</span>
+                <span v-else-if="backgroundMode === 'image'">每 10 秒获取一张随机背景图，并加暗化蒙层</span>
+                <span v-else>使用你选择的背景颜色生成纯色底图</span>
+              </p>
             </el-form-item>
 
             <!-- 背景颜色 -->

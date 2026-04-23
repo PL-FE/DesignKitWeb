@@ -1,10 +1,13 @@
 import request from './request'
 
 // 歌词视频合成参数类型
+export type LyricVideoBackgroundMode = 'video' | 'image' | 'color'
+
 export interface LyricVideoParams {
   audio: File
   lrc: File
   bg_color: string
+  background_mode: LyricVideoBackgroundMode
   font_size: number
   sung_color: string      // 已唱部分颜色
   unsung_color: string    // 未唱部分颜色
@@ -30,6 +33,7 @@ export async function generateLyricVideo(
   formData.append('audio', params.audio)
   formData.append('lrc', params.lrc)
   formData.append('bg_color', params.bg_color)
+  formData.append('background_mode', params.background_mode)
   formData.append('font_size', String(params.font_size))
   formData.append('sung_color', params.sung_color)
   formData.append('unsung_color', params.unsung_color)
