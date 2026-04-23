@@ -9,7 +9,7 @@ const baseURL = isDev ? '/api' : 'https://pyservice.pl-fe.cn/api'
 
 const request = axios.create({
   baseURL,
-  timeout: 60000,
+  timeout: 300000,
 })
 
 // 请求拦截器
