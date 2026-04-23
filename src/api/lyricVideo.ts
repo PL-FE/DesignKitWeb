@@ -28,14 +28,15 @@ export interface TaskProgress {
   status: TaskStatus
   progress: number
   result_filename?: string | null
+  download_url?: string | null
   error?: string | null
 }
 
 /**
  * 合成歌词视频（异步任务模式）
  * 1. POST /lyric-video/generate 提交任务，立即返回 task_id
- * 2. 轮询 GET /lyric-video/task/{task_id} 获取进度
- * 3. 任务完成后，同接口直接返回文件 Blob
+ * 2. 轮询 GET /lyric-video/task/{task_id} 获取进度（始终返回 JSON）
+ * 3. 任务完成后，JSON 中包含 download_url，通过该 URL 下载文件 Blob
  */
 export async function generateLyricVideo(
   params: LyricVideoParams,
@@ -75,43 +76,33 @@ export async function generateLyricVideo(
 
   const taskId = submitResp.data.task_id
 
-  // 2. 轮询任务状态
+  // 2. 轮询任务状态（始终返回 JSON）
   const POLL_INTERVAL = 2000 // 2 秒
   const MAX_POLL_TIME = 600_000 // 最长 10 分钟
   const startTime = Date.now()
 
   while (Date.now() - startTime < MAX_POLL_TIME) {
     try {
-      const pollResp = await request.get(`/lyric-video/task/${taskId}`, {
+      const pollResp = await request.get<TaskProgress>(`/lyric-video/task/${taskId}`, {
         timeout: 30_000,
-        // 关键：先以 JSON 模式请求，如果后端返回文件再手动处理
-        validateStatus: () => true,
       })
 
-      const contentType = pollResp.headers?.['content-type'] ?? ''
-
-      // 如果返回的是视频文件，说明任务完成
-      if (contentType.includes('video/') || contentType.includes('application/octet-stream')) {
-        return pollResp.data as Blob
-      }
-
-      // 否则是 JSON 状态
-      const progress: TaskProgress = pollResp.data
+      const progress = pollResp.data
       onTaskProgress?.(progress)
 
       if (progress.status === 'failed') {
         throw new Error(progress.error || '合成失败')
       }
-      if (progress.status === 'done') {
-        // 状态是 done 但返回了 JSON（不应该发生），再请求一次以 blob 模式
-        const downloadResp = await request.get(`/lyric-video/task/${taskId}`, {
+      if (progress.status === 'done' && progress.download_url) {
+        // 3. 通过专用下载接口获取文件
+        const downloadResp = await request.get(progress.download_url, {
           responseType: 'blob',
           timeout: 120_000,
         })
         return downloadResp.data as Blob
       }
     } catch (err: any) {
-      // 如果是网络错误而非业务错误，继续轮询
+      // 如果是业务错误（合成失败等），直接抛出
       if (err?.message?.includes('合成失败') || err?.message?.includes('error')) {
         throw err
       }
