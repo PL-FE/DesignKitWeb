@@ -13,12 +13,13 @@ const lrcLines = ref<Array<{ time: number; text: string }>>([])
 // ——— 合成参数（自动持久化到 localStorage）———
 const bgColor       = useLocalStorage('lv:bg_color',       '#000000')
 const fontSize      = useLocalStorage('lv:font_size',      150)
-const fontColor     = useLocalStorage('lv:font_color',     '#ffffff')
+const sungColor      = useLocalStorage('lv:sung_color',     '#ff4d4d')  // 已唱文字颜色（默认红色）
+const unsungColor    = useLocalStorage('lv:unsung_color',   '#ffffff')  // 未唱文字颜色（默认白色）
 const strokeColor   = useLocalStorage('lv:stroke_color',   '#000000')
-const strokeWidth   = useLocalStorage('lv:stroke_width',   0)
+const strokeWidth   = useLocalStorage('lv:stroke_width',   2)
 const resolution    = useLocalStorage('lv:resolution',     '1280x720')
 const removeVocals  = useLocalStorage('lv:remove_vocals',  false)
-const letterSpacing = useLocalStorage('lv:letter_spacing', 8)    // 字符间距（px）
+const letterSpacing = useLocalStorage('lv:letter_spacing', 0)     // 字符间距（px），0 为默认
 const lineGapRatio  = useLocalStorage('lv:line_gap_ratio', 1.5)  // 行间距倍数
 const wrapMode      = useLocalStorage('lv:wrap_mode', 'auto')    // 换行模式
 const maxCharsPerLine = useLocalStorage('lv:max_chars_per_line', 11) // 手动模式下每行最大字符数
@@ -81,7 +82,8 @@ async function handleGenerate() {
         lrc: lrcFile.value,
         bg_color: bgColor.value,
         font_size: fontSize.value,
-        font_color: fontColor.value,
+        sung_color: sungColor.value,
+        unsung_color: unsungColor.value,
         stroke_color: strokeColor.value,
         stroke_width: strokeWidth.value,
         resolution: resolution.value,
@@ -281,6 +283,7 @@ const statusText = computed(() => {
                 <el-input v-model="bgColor" placeholder="#0a0a1a" class="flex-1 font-mono text-sm" />
                 <div class="flex gap-1.5">
                   <button
+                    type="button"
                     v-for="c in ['#000000', '#1a1a1a', '#1a0533', '#0d1f3c', '#0f2010']"
                     :key="c"
                     class="w-6 h-6 rounded-md border-2 transition-transform hover:scale-110 active:scale-95"
@@ -339,20 +342,42 @@ const statusText = computed(() => {
               <p v-if="wrapMode === 'chars'" class="text-xs text-slate-400 mt-1">超出指定字数时自动换行，例如 11 字/行</p>
             </el-form-item>
 
-            <!-- 字体颜色 -->
+            <!-- 歌词颜色：已唱 + 未唱 -->
             <el-form-item label="歌词颜色">
-              <div class="flex items-center gap-3 w-full">
-                <el-color-picker v-model="fontColor" />
-                <el-input v-model="fontColor" placeholder="#ffffff" class="flex-1 font-mono text-sm" />
-                <div class="flex gap-1.5">
-                  <button
-                    v-for="c in ['#ffffff', '#ffe600', '#ff6b6b', '#74f5b8', '#7eb3ff']"
-                    :key="c"
-                    class="w-6 h-6 rounded-md border-2 transition-all hover:scale-110"
-                    :class="fontColor === c ? 'border-violet-500 scale-110' : 'border-transparent'"
-                    :style="{ background: c, boxShadow: '0 0 0 1px #e2e8f0' }"
-                    @click="fontColor = c"
-                  />
+              <div class="flex flex-col gap-3">
+                <!-- 已唱颜色 -->
+                <div class="flex items-center gap-3">
+                  <span class="text-sm text-slate-500 flex-shrink-0 w-14">已唱</span>
+                  <el-color-picker v-model="sungColor" />
+                  <el-input v-model="sungColor" placeholder="#ff4d4d" class="flex-1 font-mono text-sm" />
+                  <div class="flex gap-1.5">
+                    <button
+                      type="button"
+                      v-for="c in ['#ff4d4d', '#ff8533', '#ffe600', '#ff69b4', '#c084fc']"
+                      :key="c"
+                      class="w-6 h-6 rounded-md border-2 transition-all hover:scale-110"
+                      :class="sungColor === c ? 'border-violet-500 scale-110' : 'border-transparent'"
+                      :style="{ background: c, boxShadow: '0 0 0 1px #e2e8f0' }"
+                      @click="sungColor = c"
+                    />
+                  </div>
+                </div>
+                <!-- 未唱颜色 -->
+                <div class="flex items-center gap-3">
+                  <span class="text-sm text-slate-500 flex-shrink-0 w-14">未唱</span>
+                  <el-color-picker v-model="unsungColor" />
+                  <el-input v-model="unsungColor" placeholder="#ffffff" class="flex-1 font-mono text-sm" />
+                  <div class="flex gap-1.5">
+                    <button
+                      type="button"
+                      v-for="c in ['#ffffff', '#e0e0e0', '#ffe600', '#74f5b8', '#7eb3ff']"
+                      :key="c"
+                      class="w-6 h-6 rounded-md border-2 transition-all hover:scale-110"
+                      :class="unsungColor === c ? 'border-violet-500 scale-110' : 'border-transparent'"
+                      :style="{ background: c, boxShadow: '0 0 0 1px #e2e8f0' }"
+                      @click="unsungColor = c"
+                    />
+                  </div>
                 </div>
               </div>
             </el-form-item>

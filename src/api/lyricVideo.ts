@@ -6,7 +6,8 @@ export interface LyricVideoParams {
   lrc: File
   bg_color: string
   font_size: number
-  font_color: string
+  sung_color: string      // 已唱部分颜色
+  unsung_color: string    // 未唱部分颜色
   stroke_color: string
   stroke_width: number
   resolution: string
@@ -30,7 +31,8 @@ export async function generateLyricVideo(
   formData.append('lrc', params.lrc)
   formData.append('bg_color', params.bg_color)
   formData.append('font_size', String(params.font_size))
-  formData.append('font_color', params.font_color)
+  formData.append('sung_color', params.sung_color)
+  formData.append('unsung_color', params.unsung_color)
   formData.append('stroke_color', params.stroke_color)
   formData.append('stroke_width', String(params.stroke_width))
   formData.append('resolution', params.resolution)
