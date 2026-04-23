@@ -3,7 +3,7 @@ import { ref, computed } from 'vue'
 import { useLocalStorage } from '@vueuse/core'
 import { ElMessage } from 'element-plus'
 import { Icon } from '@iconify/vue'
-import { generateLyricVideo, parseLrcClient, formatTime } from '@/api/lyricVideo'
+import { generateLyricVideo, parseLrcClient, formatTime, type TaskProgress } from '@/api/lyricVideo'
 
 // ——— 文件状态（不持久化，每次刷新需重新选择文件）———
 const audioFile = ref<File | null>(null)
@@ -28,6 +28,7 @@ const backgroundMode = useLocalStorage<'video' | 'image' | 'color'>('lv:backgrou
 // ——— 处理状态 ———
 const isLoading = ref(false)
 const uploadPercent = ref(0)
+const taskProgress = ref(0)
 const status = ref<'idle' | 'uploading' | 'processing' | 'done'>('idle')
 const videoUrl = ref<string | null>(null)
 const outputFilename = ref('')
@@ -105,6 +106,10 @@ async function handleGenerate() {
         uploadPercent.value = percent
         if (percent >= 100) status.value = 'processing'
       },
+      (progress: TaskProgress) => {
+        taskProgress.value = progress.progress
+        status.value = 'processing'
+      },
     )
     const base = audioFile.value.name.replace(/\.[^.]+$/, '')
     outputFilename.value = `${base}_lyrics_video.mp4`
@@ -132,7 +137,7 @@ function downloadVideo() {
 
 const statusText = computed(() => {
   if (status.value === 'uploading') return `上传中 ${uploadPercent.value}%`
-  if (status.value === 'processing') return '正在合成视频，请稍候...'
+  if (status.value === 'processing') return taskProgress.value > 0 ? `正在合成视频 ${taskProgress.value}%...` : '正在合成视频，请稍候...'
   return ''
 })
 </script>
@@ -470,6 +475,14 @@ const statusText = computed(() => {
                 <span class="spinner w-4 h-4 rounded-full border-2 border-violet-300 border-t-violet-600 flex-shrink-0" />
                 <span class="text-sm text-violet-700 font-medium">{{ statusText }}</span>
               </div>
+              <el-progress
+                v-if="taskProgress > 0"
+                :percentage="taskProgress"
+                :show-text="false"
+                striped
+                striped-flow
+                class="mt-2"
+              />
             </div>
           </transition>
         </el-card>

@@ -21,13 +21,26 @@ export interface LyricVideoParams {
   max_chars_per_line: number
 }
 
+export type TaskStatus = 'pending' | 'processing' | 'done' | 'failed'
+
+export interface TaskProgress {
+  task_id: string
+  status: TaskStatus
+  progress: number
+  result_filename?: string | null
+  error?: string | null
+}
+
 /**
- * 合成歌词视频
- * 上传音频 + LRC 歌词，返回 MP4 视频 Blob
+ * 合成歌词视频（异步任务模式）
+ * 1. POST /lyric-video/generate 提交任务，立即返回 task_id
+ * 2. 轮询 GET /lyric-video/task/{task_id} 获取进度
+ * 3. 任务完成后，同接口直接返回文件 Blob
  */
 export async function generateLyricVideo(
   params: LyricVideoParams,
-  onProgress?: (percent: number) => void,
+  onUploadProgress?: (percent: number) => void,
+  onTaskProgress?: (progress: TaskProgress) => void,
 ): Promise<Blob> {
   const formData = new FormData()
   formData.append('audio', params.audio)
@@ -46,17 +59,68 @@ export async function generateLyricVideo(
   formData.append('wrap_mode', params.wrap_mode)
   formData.append('max_chars_per_line', String(params.max_chars_per_line))
 
-  const response = await request.post('/lyric-video/generate', formData, {
-    responseType: 'blob',
-    timeout: 600_000, // 最长 10 分钟，去除人声比较耗时
-    onUploadProgress: (e) => {
-      if (onProgress && e.total) {
-        onProgress(Math.round((e.loaded / e.total) * 100))
-      }
+  // 1. 提交任务
+  const submitResp = await request.post<{ task_id: string; status: string }>(
+    '/lyric-video/generate',
+    formData,
+    {
+      timeout: 60_000,
+      onUploadProgress: (e) => {
+        if (onUploadProgress && e.total) {
+          onUploadProgress(Math.round((e.loaded / e.total) * 100))
+        }
+      },
     },
-  })
+  )
 
-  return response.data as Blob
+  const taskId = submitResp.data.task_id
+
+  // 2. 轮询任务状态
+  const POLL_INTERVAL = 2000 // 2 秒
+  const MAX_POLL_TIME = 600_000 // 最长 10 分钟
+  const startTime = Date.now()
+
+  while (Date.now() - startTime < MAX_POLL_TIME) {
+    try {
+      const pollResp = await request.get(`/lyric-video/task/${taskId}`, {
+        timeout: 30_000,
+        // 关键：先以 JSON 模式请求，如果后端返回文件再手动处理
+        validateStatus: () => true,
+      })
+
+      const contentType = pollResp.headers?.['content-type'] ?? ''
+
+      // 如果返回的是视频文件，说明任务完成
+      if (contentType.includes('video/') || contentType.includes('application/octet-stream')) {
+        return pollResp.data as Blob
+      }
+
+      // 否则是 JSON 状态
+      const progress: TaskProgress = pollResp.data
+      onTaskProgress?.(progress)
+
+      if (progress.status === 'failed') {
+        throw new Error(progress.error || '合成失败')
+      }
+      if (progress.status === 'done') {
+        // 状态是 done 但返回了 JSON（不应该发生），再请求一次以 blob 模式
+        const downloadResp = await request.get(`/lyric-video/task/${taskId}`, {
+          responseType: 'blob',
+          timeout: 120_000,
+        })
+        return downloadResp.data as Blob
+      }
+    } catch (err: any) {
+      // 如果是网络错误而非业务错误，继续轮询
+      if (err?.message?.includes('合成失败') || err?.message?.includes('error')) {
+        throw err
+      }
+    }
+
+    await new Promise((r) => setTimeout(r, POLL_INTERVAL))
+  }
+
+  throw new Error('合成超时（超过 10 分钟），请尝试较短音频或降低分辨率')
 }
 
 /**
