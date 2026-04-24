@@ -1,1 +1,0 @@
-import{a2 as p,D as e}from"./index-CHG2lUrO.js";const d=p("video",()=>{const r=e("mp4"),o=e("medium"),s=e("gif"),t=e(15);return{preferredFormat:r,preferredCompressLevel:o,preferredGifFormat:s,preferredFps:t}},{persist:!0});export{d as u};
