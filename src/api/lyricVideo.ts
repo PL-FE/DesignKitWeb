@@ -20,6 +20,11 @@ export interface LyricVideoParams {
   wrap_mode: string
   max_chars_per_line: number
   lines_mode: string      // 歌词行数模式：3=三行滚动，2=两行居中
+  // 封面文字
+  cover_title: string     // 封面标题
+  cover_subtitle: string  // 封面副标题
+  cover_title_font_size: number     // 封面标题字号
+  cover_subtitle_font_size: number  // 封面副标题字号
 }
 
 export type TaskStatus = 'pending' | 'processing' | 'done' | 'failed'
@@ -61,6 +66,10 @@ export async function generateLyricVideo(
   formData.append('wrap_mode', params.wrap_mode)
   formData.append('max_chars_per_line', String(params.max_chars_per_line))
   formData.append('lines_mode', String(params.lines_mode))
+  formData.append('cover_title', params.cover_title)
+  formData.append('cover_subtitle', params.cover_subtitle)
+  formData.append('cover_title_font_size', String(params.cover_title_font_size))
+  formData.append('cover_subtitle_font_size', String(params.cover_subtitle_font_size))
 
   // 1. 提交任务
   const submitResp = await request.post<{ task_id: string; status: string }>(
