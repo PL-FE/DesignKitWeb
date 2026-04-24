@@ -3,7 +3,7 @@ import { ref, computed } from 'vue'
 import { useLocalStorage } from '@vueuse/core'
 import { ElMessage } from 'element-plus'
 import { Icon } from '@iconify/vue'
-import { generateLyricVideo, parseLrcClient, formatTime, type TaskProgress } from '@/api/lyricVideo'
+import { generateLyricVideo, parseLrcClient, formatTime } from '@/api/lyricVideo'
 
 // ——— 文件状态（不持久化，每次刷新需重新选择文件）———
 const audioFile = ref<File | null>(null)
@@ -24,11 +24,11 @@ const lineGapRatio  = useLocalStorage('lv:line_gap_ratio', 1.5)  // 行间距倍
 const wrapMode      = useLocalStorage('lv:wrap_mode', 'auto')    // 换行模式
 const maxCharsPerLine = useLocalStorage('lv:max_chars_per_line', 11) // 手动模式下每行最大字符数
 const backgroundMode = useLocalStorage<'video' | 'image' | 'color'>('lv:background_mode', 'video')
+const linesMode = useLocalStorage<'3' | '2'>('lv:lines_mode', '3')  // 歌词行数模式：3=三行滚动，2=两行居中
 
 // ——— 处理状态 ———
 const isLoading = ref(false)
 const uploadPercent = ref(0)
-const taskProgress = ref(0)
 const status = ref<'idle' | 'uploading' | 'processing' | 'done'>('idle')
 const videoUrl = ref<string | null>(null)
 const outputFilename = ref('')
@@ -78,6 +78,14 @@ async function handleGenerate() {
   if (!lrcFile.value) { ElMessage.warning('请先上传 LRC 歌词文件'); return }
   if (lrcLines.value.length === 0) { ElMessage.warning('歌词文件解析失败，请检查格式后重新上传'); return }
 
+  // 调试：打印当前 linesMode 值
+  console.log('[DEBUG] linesMode.value:', linesMode.value, typeof linesMode.value)
+  console.log('[DEBUG] 所有参数:', {
+    lines_mode: linesMode.value,
+    wrap_mode: wrapMode.value,
+    max_chars_per_line: maxCharsPerLine.value,
+  })
+
   isLoading.value = true
   status.value = 'uploading'
   uploadPercent.value = 0
@@ -101,14 +109,11 @@ async function handleGenerate() {
         line_gap_ratio: lineGapRatio.value,
         wrap_mode: wrapMode.value,
         max_chars_per_line: maxCharsPerLine.value,
+        lines_mode: linesMode.value,
       },
       (percent) => {
         uploadPercent.value = percent
         if (percent >= 100) status.value = 'processing'
-      },
-      (progress: TaskProgress) => {
-        taskProgress.value = progress.progress
-        status.value = 'processing'
       },
     )
     const base = audioFile.value.name.replace(/\.[^.]+$/, '')
@@ -137,7 +142,7 @@ function downloadVideo() {
 
 const statusText = computed(() => {
   if (status.value === 'uploading') return `上传中 ${uploadPercent.value}%`
-  if (status.value === 'processing') return taskProgress.value > 0 ? `正在合成视频 ${taskProgress.value}%...` : '正在合成视频，请稍候...'
+  if (status.value === 'processing') return '正在合成视频，请稍候...'
   return ''
 })
 </script>
@@ -156,7 +161,7 @@ const statusText = computed(() => {
           歌词视频合成
         </h2>
         <p class="text-slate-500 text-xs md:text-sm mt-1">
-          上传音频 + LRC 歌词，生成带大字幕提词的 MP4 视频 · 三行滚动显示
+          上传音频 + LRC 歌词，生成带大字幕提词的 MP4 视频 · 支持三行滚动/两行居中
         </p>
       </div>
     </div>
@@ -364,6 +369,18 @@ const statusText = computed(() => {
               <p v-if="wrapMode === 'chars'" class="text-xs text-slate-400 mt-1">超出指定字数时自动换行，例如 11 字/行</p>
             </el-form-item>
 
+            <!-- 歌词行数模式 -->
+            <el-form-item label="歌词显示">
+              <div class="flex items-center gap-3 w-full">
+                <el-radio-group v-model="linesMode" size="small">
+                  <el-radio-button value="3">三行滚动</el-radio-button>
+                  <el-radio-button value="2">两行居中</el-radio-button>
+                </el-radio-group>
+              </div>
+              <p v-if="linesMode === '3'" class="text-xs text-slate-400 mt-1">三行滚动显示，上下行灰色淡化，中间行卡拉OK高亮</p>
+              <p v-if="linesMode === '2'" class="text-xs text-slate-400 mt-1">两行居中显示，相同大小和颜色，唱完消失后显示下一句</p>
+            </el-form-item>
+
             <!-- 歌词颜色：已唱 + 未唱 -->
             <el-form-item label="歌词颜色">
               <div class="flex flex-col gap-3">
@@ -468,21 +485,16 @@ const statusText = computed(() => {
             </div>
           </transition>
 
-          <!-- 合成中 -->
+          <!-- 合成中（不显示进度百分比，后端无真实进度） -->
           <transition name="fade">
             <div v-if="isLoading && status === 'processing'" class="mt-4">
-              <div class="processing-bar rounded-xl p-3 flex items-center gap-2">
+              <div class="processing-bar rounded-xl p-3 flex items-center gap-3">
                 <span class="spinner w-4 h-4 rounded-full border-2 border-violet-300 border-t-violet-600 flex-shrink-0" />
-                <span class="text-sm text-violet-700 font-medium">{{ statusText }}</span>
+                <div class="flex flex-col">
+                  <span class="text-sm text-violet-700 font-medium">正在合成视频...</span>
+                  <span class="text-xs text-slate-400">预计需要 30-60 秒，请耐心等待</span>
+                </div>
               </div>
-              <el-progress
-                v-if="taskProgress > 0"
-                :percentage="taskProgress"
-                :show-text="false"
-                striped
-                striped-flow
-                class="mt-2"
-              />
             </div>
           </transition>
         </el-card>
@@ -538,7 +550,7 @@ const statusText = computed(() => {
           <div class="preview-footer flex items-center justify-between px-5 py-4">
             <div class="text-white/60 text-xs">
               <Icon icon="solar:info-circle-bold-duotone" class="inline mr-1" />
-              歌词三行滚动 · 中间行高亮 · 上下行淡色
+              {{ linesMode === '3' ? '歌词三行滚动 · 中间行高亮 · 上下行淡色' : '歌词两行居中 · 相同大小颜色 · 唱完消失' }}
             </div>
             <button
               class="download-btn-lg flex items-center gap-3 px-8 py-3 rounded-2xl font-bold text-base transition-all hover:scale-105 active:scale-95 shadow-lg"
@@ -597,13 +609,18 @@ const statusText = computed(() => {
 .video-wrapper {
   min-height: 320px;
   max-height: 70vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .preview-video {
   display: block;
   max-width: 100%;
   max-height: 70vh;
-  width: auto;
+  width: 100%;
   height: auto;
+  object-fit: contain;
+  background: #000;
 }
 
 /* 下载按钮 */

@@ -14,6 +14,8 @@ export interface LyricVideoParams {
   line_gap_ratio: number
   wrap_mode: 'auto' | 'chars'
   max_chars_per_line: number
+  lines_mode: '3' | '2'  // 歌词行数模式：3=三行滚动，2=两行居中
+  background_mode?: 'video' | 'image' | 'color'  // 背景类型（可选，兼容旧版）
 }
 
 export function parseLrcClient(text: string): Array<{ time: number; text: string }> {
@@ -75,6 +77,8 @@ export async function generateLyricVideo(
   formData.append('line_gap_ratio', String(params.line_gap_ratio))
   formData.append('wrap_mode', params.wrap_mode)
   formData.append('max_chars_per_line', String(params.max_chars_per_line))
+  console.log('[API] lines_mode to send:', params.lines_mode, typeof params.lines_mode)
+  formData.append('lines_mode', String(params.lines_mode))
 
   const response = await request.post('/o3ic-video/generate', formData, {
     timeout: 0,

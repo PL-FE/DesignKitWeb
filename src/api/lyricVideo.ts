@@ -19,6 +19,7 @@ export interface LyricVideoParams {
   line_gap_ratio: number
   wrap_mode: string
   max_chars_per_line: number
+  lines_mode: string      // 歌词行数模式：3=三行滚动，2=两行居中
 }
 
 export type TaskStatus = 'pending' | 'processing' | 'done' | 'failed'
@@ -59,6 +60,7 @@ export async function generateLyricVideo(
   formData.append('line_gap_ratio', String(params.line_gap_ratio))
   formData.append('wrap_mode', params.wrap_mode)
   formData.append('max_chars_per_line', String(params.max_chars_per_line))
+  formData.append('lines_mode', String(params.lines_mode))
 
   // 1. 提交任务
   const submitResp = await request.post<{ task_id: string; status: string }>(
