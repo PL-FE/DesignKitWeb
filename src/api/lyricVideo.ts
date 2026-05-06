@@ -48,6 +48,8 @@ export async function generateLyricVideo(
   params: LyricVideoParams,
   onUploadProgress?: (percent: number) => void,
   onTaskProgress?: (progress: TaskProgress) => void,
+  signal?: AbortSignal,
+  onTaskId?: (taskId: string) => void,
 ): Promise<Blob> {
   const formData = new FormData()
   formData.append('audio', params.audio)
@@ -82,10 +84,12 @@ export async function generateLyricVideo(
           onUploadProgress(Math.round((e.loaded / e.total) * 100))
         }
       },
+      signal,
     },
   )
 
   const taskId = submitResp.data.task_id
+  onTaskId?.(taskId)
 
   // 2. 轮询任务状态（始终返回 JSON）
   const POLL_INTERVAL = 2000 // 2 秒
@@ -96,6 +100,7 @@ export async function generateLyricVideo(
     try {
       const pollResp = await request.get<TaskProgress>(`/lyric-video/task/${taskId}`, {
         timeout: 30_000,
+        signal,
       })
 
       const progress = pollResp.data
@@ -109,6 +114,7 @@ export async function generateLyricVideo(
         const downloadResp = await request.get(progress.download_url, {
           responseType: 'blob',
           timeout: 120_000,
+          signal,
         })
         return downloadResp.data as Blob
       }
@@ -126,27 +132,71 @@ export async function generateLyricVideo(
 }
 
 /**
+ * 显式取消后端任务
+ */
+export async function cancelLyricVideoTask(taskId: string) {
+  return request.post(`/lyric-video/task/${taskId}/cancel`)
+}
+
+/**
  * 前端解析 LRC 内容，用于预览（不依赖后端）
  * 返回 [{time: number, text: string}]
  */
-export function parseLrcClient(lrcContent: string): Array<{ time: number; text: string }> {
-  const lines: Array<{ time: number; text: string }> = []
+export function parseLrcClient(lrcContent: string): Array<{ time: number; text: string; char_times?: number[] }> {
+  const lines: Array<{ time: number; text: string; char_times?: number[] }> = []
   const timeTagRe = /\[(\d{1,3}):(\d{2})\.(\d{1,3})\]/g
-  const rowRe = /^(\[[\d:.]+\])+(.*)$/
 
   for (const row of lrcContent.split('\n')) {
     const trimmed = row.trim()
-    if (!rowRe.test(trimmed)) continue
-    const text = trimmed.replace(/\[\d{1,3}:\d{2}\.\d{1,3}\]/g, '').trim()
-    if (!text) continue
-    let m: RegExpExecArray | null
+    if (!trimmed) continue
     const rowTags = [...trimmed.matchAll(/\[(\d{1,3}):(\d{2})\.(\d{1,3})\]/g)]
-    for (const tag of rowTags) {
-      const minutes = parseInt(tag[1] ?? '0')
-      const seconds = parseInt(tag[2] ?? '0')
-      const ms = parseInt((tag[3] ?? '0').padEnd(3, '0').slice(0, 3))
-      const totalSeconds = minutes * 60 + seconds + ms / 1000
-      lines.push({ time: totalSeconds, text })
+    if (rowTags.length === 0) continue
+
+    const enhancedTags = [...trimmed.matchAll(/<(\d{1,3}):(\d{2})\.(\d{1,3})>/g)]
+
+    if (enhancedTags.length > 0) {
+      // 增强型 LRC：提取纯文本和所有时间戳
+      const fullText = trimmed.replace(/\[.*?\]|<.*?>/g, '')
+      const charTimes = enhancedTags.map(([, m, s, cs]) => {
+        const ms = parseInt((cs!).padEnd(3, '0').slice(0, 3))
+        return parseInt(m!) * 60 + parseInt(s!) + ms / 1000
+      })
+
+      if (fullText) {
+        // 对于增强型歌词，通常只有一个行时间戳，这里按第一个算
+        lines.push({ time: charTimes[0], text: fullText, char_times: charTimes })
+      }
+    } else {
+      const plainText = trimmed.replace(/\[\d{1,3}:\d{2}\.\d{1,3}\]/g, '').trim()
+      if (!plainText) continue
+
+      const isPerChar = rowTags.length >= plainText.length * 0.6
+
+      if (isPerChar) {
+        const pairs = [...trimmed.matchAll(/\[(\d{1,3}):(\d{2})\.(\d{1,3})\]([^\[]*)/g)]
+        const chars: string[] = []
+        const charTimes: number[] = []
+        for (const [, m, s, cs, ch] of pairs) {
+          const c = ch.trim()
+          if (c) {
+            chars.push(c)
+            const minutes = parseInt(m!)
+            const seconds = parseInt(s!)
+            const ms = parseInt((cs!).padEnd(3, '0').slice(0, 3))
+            charTimes.push(minutes * 60 + seconds + ms / 1000)
+          }
+        }
+        if (chars.length === 0) continue
+        lines.push({ time: charTimes[0], text: chars.join(''), char_times: charTimes })
+      } else {
+        for (const tag of rowTags) {
+          const minutes = parseInt(tag[1] ?? '0')
+          const seconds = parseInt(tag[2] ?? '0')
+          const ms = parseInt((tag[3] ?? '0').padEnd(3, '0').slice(0, 3))
+          const totalSeconds = minutes * 60 + seconds + ms / 1000
+          lines.push({ time: totalSeconds, text: plainText })
+        }
+      }
     }
   }
   return lines.sort((a, b) => a.time - b.time)
