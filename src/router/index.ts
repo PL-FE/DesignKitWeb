@@ -66,12 +66,7 @@ const router = createRouter({
       component: () => import('@/views/BoardLayout.vue'),
       meta: { title: '展板排版生成 PSD - DesignKit' },
     },
-    {
-      path: '/audio-vocal-removal',
-      name: 'audio-vocal-removal',
-      component: () => import('@/views/AudioVocalRemoval.vue'),
-      meta: { title: '人声去除 / 伴奏提取 - DesignKit' },
-    },
+
     {
       path: '/audio-merge',
       name: 'audio-merge',

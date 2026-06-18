@@ -223,14 +223,6 @@ const tools = [
     color: 'from-emerald-500 to-teal-500',
   },
   {
-    id: 'audio-vocal-removal',
-    name: '人声去除 / 伴奏提取',
-    description: '基于 AI 模型，一键分离人声与伴奏，提取纯净伴奏',
-    icon: 'solar:music-note-bold-duotone',
-    route: '/audio-vocal-removal',
-    color: 'from-violet-500 to-purple-500',
-  },
-  {
     id: 'audio-merge',
     name: '音乐合并',
     description: '支持多段音频拼接，可自由调整顺序，导出高质量 MP3',
@@ -257,7 +249,7 @@ const tools = [
   {
     id: 'lyric-video',
     name: '歌词视频合成',
-    description: '上传音频 + LRC 歌词，生成带大字幕提词的 MP4 视频，支持 AI 人声去除',
+    description: '上传音频 + LRC 歌词，生成带大字幕提词的 MP4 视频',
     icon: 'solar:clapperboard-play-bold-duotone',
     route: '/lyric-video',
     color: 'from-violet-600 to-fuchsia-500',

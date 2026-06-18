@@ -29,7 +29,7 @@ const unsungColor = useLocalStorage('lv:unsung_color', '#ffffff') // 未唱文�
 const strokeColor = useLocalStorage('lv:stroke_color', '#000000')
 const strokeWidth = useLocalStorage('lv:stroke_width', 2)
 const resolution = useLocalStorage('lv:resolution', '1280x720')
-const removeVocals = useLocalStorage('lv:remove_vocals', false)
+
 const letterSpacing = useLocalStorage('lv:letter_spacing', 0) // 字符间距（px），0 为默认
 const lineGapRatio = useLocalStorage('lv:line_gap_ratio', 1.5) // 行间距倍数
 const wrapMode = useLocalStorage('lv:wrap_mode', 'auto') // 换行模式
@@ -168,7 +168,7 @@ async function handleGenerate() {
         stroke_color: strokeColor.value,
         stroke_width: strokeWidth.value,
         resolution: resolution.value,
-        remove_vocals: removeVocals.value,
+        remove_vocals: false,
         letter_spacing: letterSpacing.value,
         line_gap_ratio: lineGapRatio.value,
         wrap_mode: wrapMode.value,
