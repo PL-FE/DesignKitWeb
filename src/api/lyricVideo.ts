@@ -50,7 +50,7 @@ export async function generateLyricVideo(
   onTaskProgress?: (progress: TaskProgress) => void,
   signal?: AbortSignal,
   onTaskId?: (taskId: string) => void,
-): Promise<Blob> {
+): Promise<string> {
   const formData = new FormData()
   formData.append('audio', params.audio)
   formData.append('lrc', params.lrc)
@@ -110,13 +110,9 @@ export async function generateLyricVideo(
         throw new Error(progress.error || '合成失败')
       }
       if (progress.status === 'done' && progress.download_url) {
-        // 3. 通过专用下载接口获取文件
-        const downloadResp = await request.get(progress.download_url, {
-          responseType: 'blob',
-          timeout: 120_000,
-          signal,
-        })
-        return downloadResp.data as Blob
+        // 直接返回最终的绝对下载/播放 URL，不再在前端用 Axios 拉取 Blob 字节流
+        const apiBase = request.defaults.baseURL || ''
+        return apiBase + progress.download_url
       }
     } catch (err: any) {
       // 如果是业务错误（合成失败等），直接抛出

@@ -156,7 +156,7 @@ async function handleGenerate() {
   startTimer()
 
   try {
-    const blob = await generateLyricVideo(
+    const downloadUrl = await generateLyricVideo(
       {
         audio: audioFile.value,
         lrc: lrcFile.value,
@@ -191,7 +191,7 @@ async function handleGenerate() {
     )
     const base = audioFile.value.name.replace(/\.[^.]+$/, '')
     outputFilename.value = `${base}_lyrics_video.mp4`
-    videoUrl.value = URL.createObjectURL(blob)
+    videoUrl.value = downloadUrl
     status.value = 'done'
     ElMessage.success('歌词视频合成完成！')
     // 滚动到预览区
@@ -234,7 +234,6 @@ function downloadVideo() {
   if (!videoUrl.value) return
   const a = document.createElement('a')
   a.href = videoUrl.value
-  a.download = outputFilename.value
   a.click()
 }
 
